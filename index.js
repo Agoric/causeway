@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 import router from './router.js';
 import { requestLogger } from './middleware/requestLogger.js';
 
-const PORT = 8080;
+const PORT = 3000;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
