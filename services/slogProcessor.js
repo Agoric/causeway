@@ -1,7 +1,9 @@
 /* eslint-disable no-continue */
 // @ts-check
 // Source: https://github.com/Agoric/agoric-sdk/blob/slog-to-causeway/packages/SwingSet/misc-tools/slog-to-diagram.mjs
+import fs from 'fs';
 import { pipeline } from 'stream';
+import { promisify } from 'util';
 
 // [PlantUML \- Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml)
 
@@ -104,7 +106,7 @@ async function slogSummary(entries) {
         });
         break;
       case 'deliver': {
-        const { kd } = entry;
+        const { vd: kd } = entry;
         if (!vatInfo.has(entry.vatID))
           vatInfo.set(entry.vatID, {
             type: 'create-vat',
@@ -135,7 +137,8 @@ async function slogSummary(entries) {
                 result,
               },
             ] = kd;
-            const [method] = JSON.parse(body);
+            const jsonString = body.startsWith('#') ? body.slice(1) : body;
+            const [method] = JSON.parse(jsonString);
             dInfo = {
               type: entry.type,
               time: entry.time,
@@ -193,10 +196,10 @@ async function slogSummary(entries) {
         break;
       }
       case 'syscall': {
-        switch (entry.ksc[0]) {
+        switch (entry.vsc[0]) {
           case 'send': {
             const {
-              ksc: [_, target, { method, result }],
+              vsc: [_, target, { method, result }],
             } = entry;
             departure.set(result, {
               type: entry.type,
@@ -208,6 +211,10 @@ async function slogSummary(entries) {
             break;
           }
           case 'resolve': {
+            if (!entry || !entry.ksc) {
+              console.error('Entry or entry.ksc is undefined');
+              break;
+            }
             const {
               ksc: [_, _thatVat, parts],
             } = entry;
@@ -221,9 +228,9 @@ async function slogSummary(entries) {
             break;
           }
           default:
-            if (!seen.syscall.has(entry.ksc[0])) {
-              console.warn('syscall tag unknown:', entry.ksc[0]);
-              seen.syscall.add(entry.ksc[0]);
+            if (!seen.syscall.has(entry.vsc[0])) {
+              console.warn('syscall tag unknown:', entry.vsc[0]);
+              seen.syscall.add(entry.vsc[0]);
             }
             // skip
             break;
@@ -249,7 +256,7 @@ const { freeze } = Object;
  */
 const fmtPlantUml = freeze({
   /** @param {string} name */
-  start: name => `@startuml ${name}\n`,
+  start: (name) => `@startuml ${name}\n`,
   /** @type {() => string} */
   end: () => '@enduml\n',
   /** @type {(l: string, v: string) => string} */
@@ -257,9 +264,9 @@ const fmtPlantUml = freeze({
   /** @type {(s: string, t: string) => string} */
   note: (side, text) => `note ${side}\n${text}\nend note\n`,
   /** @param {string} text */
-  delay: text => `... ${text} ...\n`,
+  delay: (text) => `... ${text} ...\n`,
   /** @param {number} x */
-  autonumber: x => `autonumber ${x}\n`,
+  autonumber: (x) => `autonumber ${x}\n`,
   /** @type {(d: string, msg: string, m?: boolean) => string} */
   incoming: (dest, msg, missing) =>
     `[${missing ? 'o' : ''}-> ${dest} : ${msg}\n`,
@@ -274,7 +281,7 @@ const fmtPlantUml = freeze({
  */
 const fmtMermaid = freeze({
   /** @param {string} _name */
-  start: _name =>
+  start: (_name) =>
     `\`\`\`mermaid\nsequenceDiagram\n  autonumber\n  participant Incoming\n`,
   end: () => '```\n',
   /** @type {(l: string, v: string) => string} */
@@ -282,9 +289,9 @@ const fmtMermaid = freeze({
   /** @type {(s: string, t: string) => string} */
   note: (side, text) => `  note ${side} of XXXActor ${text}\n`,
   /** @param {string} text */
-  delay: text => `  %% TODO: delay ... ${text} ...\n`,
+  delay: (text) => `  %% TODO: delay ... ${text} ...\n`,
   /** @param {number} _x */
-  autonumber: _x => '',
+  autonumber: (_x) => '',
   /** @type {(d: string, msg: string, m?: boolean) => string} */
   incoming: (dest, msg, _missing) => `  Incoming ->> ${dest} : ${msg}\n`,
   /** @type {(s: string, d: string, msg: string) => string} */
@@ -300,7 +307,7 @@ const fmtMermaid = freeze({
  */
 async function* diagramLines(
   fmt,
-  { vatInfo, arrival, departure, deliverResults },
+  { vatInfo, arrival, departure, deliverResults }
 ) {
   yield fmt.start('slog');
 
@@ -311,7 +318,7 @@ async function* diagramLines(
   }
 
   const byTime = [...arrival, ...deliverResults].sort(
-    (a, b) => a[1].time - b[1].time,
+    (a, b) => a[1].time - b[1].time
   );
 
   let active;
@@ -402,23 +409,13 @@ async function* slogToDiagram(entries) {
   }
 }
 
-/**
- * @param {{
- *   stdin: typeof process.stdin,
- *   stdout: typeof process.stdout,
- * }} io
- */
-const main = async ({ stdin, stdout }) =>
-  pipeline(stdin, readJSONLines, slogToDiagram, stdout, err => {
-    if (err) throw err;
+const pipelineAsync = promisify(pipeline);
+
+export const processSlogs = async (inputFile, outputFile) => {
+  const inputStream = fs.createReadStream(inputFile, { encoding: 'utf-8' });
+  const outputStream = fs.createWriteStream(outputFile, {
+    encoding: 'utf-8',
   });
 
-/* TODO: only call main() if this is from CLI */
-/* global process */
-main({
-  stdin: process.stdin,
-  stdout: process.stdout,
-}).catch(err => {
-  console.error(err);
-  process.exit(1);
-});
+  await pipelineAsync(inputStream, readJSONLines, slogToDiagram, outputStream);
+};

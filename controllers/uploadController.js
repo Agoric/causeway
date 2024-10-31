@@ -1,5 +1,6 @@
 import fs from 'fs';
 import multer from 'multer';
+import { processSlogs } from '../services/slogProcessor.js';
 
 const uploadDir = 'uploads';
 if (!fs.existsSync(uploadDir)) {
@@ -8,7 +9,7 @@ if (!fs.existsSync(uploadDir)) {
 
 const storage = multer.diskStorage({
   destination: (_, __, cb) => {
-    cb(null, 'uploads/'); // Specify the folder to save files
+    cb(null, uploadDir); // Specify the folder to save files
   },
   filename: (_, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -16,13 +17,27 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
-export const handleFileUpload = (req, res) => {
+export const handleFileUpload = async (req, res) => {
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
   }
-  res.send(`File uploaded successfully as ${req.file.filename}`);
+
+  const inputFile = req.file.path;
+  const outputFile = `${uploadDir}/processed-${req.file.filename}.puml`;
+
+  try {
+   
+    await processSlogs(inputFile, outputFile);
+    
+    res.send(
+      `File uploaded and processed successfully. Output saved as ${outputFile}`
+    );
+  } catch (error) {
+    console.error('Error processing file:', error);
+    res.status(500).send('Error processing file.');
+  }
 };
 
 export { upload };
