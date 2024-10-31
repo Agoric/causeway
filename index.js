@@ -2,6 +2,7 @@ import './lockdown.js';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import router from './router.js';
 
 const PORT = 8080;
 const __filename = fileURLToPath(import.meta.url);
@@ -11,10 +12,7 @@ const app = express();
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
-
-app.get('/', (_, res) =>
-  res.sendFile(path.join(__dirname, 'public/index.html'))
-);
+app.use('/', router);
 
 app.listen(PORT, () => {
   console.log(`Server listening on ${PORT}`);
