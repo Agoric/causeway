@@ -1,5 +1,4 @@
 /* eslint-disable no-continue */
-// @ts-check
 // Source: https://github.com/Agoric/agoric-sdk/blob/slog-to-causeway/packages/SwingSet/misc-tools/slog-to-diagram.mjs
 import fs from 'fs';
 import { pipeline } from 'stream';

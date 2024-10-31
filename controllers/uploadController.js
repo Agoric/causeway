@@ -36,8 +36,6 @@ export const handleFileUpload = async (req, res) => {
   try {
     console.log('Processing Slogs....');
     await processSlogs({ inputFile, outputFile });
-
-    console.log('Converting to SVG....');
     await convertToSVG({ inputPath: outputFile });
 
     console.log('Sending file....');
