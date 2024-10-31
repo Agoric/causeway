@@ -1,6 +1,7 @@
 import fs from 'fs';
 import multer from 'multer';
 import { processSlogs } from '../services/slogProcessor.js';
+import { convertToSVG } from '../services/pumlToSvgConverter.js';
 
 const uploadDir = 'uploads';
 if (!fs.existsSync(uploadDir)) {
@@ -28,9 +29,12 @@ export const handleFileUpload = async (req, res) => {
   const outputFile = `${uploadDir}/processed-${req.file.filename}.puml`;
 
   try {
-   
     await processSlogs(inputFile, outputFile);
-    
+
+    const svgFile = outputFile.replace('.puml', '.svg');
+    console.log("LOGs...........", svgFile)
+    await convertToSVG(outputFile, svgFile);
+
     res.send(
       `File uploaded and processed successfully. Output saved as ${outputFile}`
     );
