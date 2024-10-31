@@ -5,11 +5,12 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const convertToSVG = async ({ inputPath }) => {
+export const convertToSVG = async ({ inputPath, svgDir }) => {
   try {
-    const plantUMLJarPath = path.join(__dirname, 'plantuml.jar');
+    const plantUMLJarPath = path.join(__dirname, '..', 'plantuml.jar');
     console.log('Starting conversion...');
-    const output = await $`java -jar "${plantUMLJarPath}" -tsvg "${inputPath}"`;
+    const output =
+      await $`java -jar "${plantUMLJarPath}" -tsvg "${inputPath}" -o ${svgDir}`;
     console.log('Conversion complete:', output);
   } catch (error) {
     console.error('Error during SVG conversion:', error);

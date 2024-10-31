@@ -12,8 +12,11 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     });
 
     if (response.ok) {
-      const svgContent = await response.text();
-      document.body.innerHTML = svgContent;
+      const svgContent = await response.blob();
+      const url = URL.createObjectURL(svgContent);
+
+      const newWindow = window.open();
+      newWindow.document.write(`<img src="${url}" alt="Uploaded SVG Image" />`);
     } else {
       console.error('Failed to upload file');
     }

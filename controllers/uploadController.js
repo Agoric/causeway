@@ -8,7 +8,9 @@ import { convertToSVG } from '../services/pumlToSvgConverter.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
 const uploadDir = 'uploads';
+
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir);
 }
@@ -18,7 +20,6 @@ const storage = multer.diskStorage({
     cb(null, uploadDir); // Specify the folder to save files
   },
   filename: (_, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + '-' + file.originalname);
   },
 });
@@ -36,10 +37,12 @@ export const handleFileUpload = async (req, res) => {
   try {
     console.log('Processing Slogs....');
     await processSlogs({ inputFile, outputFile });
-    await convertToSVG({ inputPath: outputFile });
+
+    const svgDir = `${uniqueSuffix}`;
+    await convertToSVG({ inputPath: outputFile, svgDir });
 
     console.log('Sending file....');
-    res.sendFile(path.join(__dirname, '../uploads/slog.svg'));
+    res.sendFile(path.join(__dirname, '..', `${uploadDir}/${svgDir}/slog.svg`));
   } catch (error) {
     console.error('Error processing file:', error);
     res.status(500).send('Error processing file.');
