@@ -1,7 +1,12 @@
 import fs from 'fs';
 import multer from 'multer';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { processSlogs } from '../services/slogProcessor.js';
 import { convertToSVG } from '../services/pumlToSvgConverter.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const uploadDir = 'uploads';
 if (!fs.existsSync(uploadDir)) {
@@ -29,15 +34,14 @@ export const handleFileUpload = async (req, res) => {
   const outputFile = `${uploadDir}/processed-${req.file.filename}.puml`;
 
   try {
-    await processSlogs(inputFile, outputFile);
+    console.log('Processing Slogs....');
+    await processSlogs({ inputFile, outputFile });
 
-    const svgFile = outputFile.replace('.puml', '.svg');
-    console.log("LOGs...........", svgFile)
-    await convertToSVG(outputFile, svgFile);
+    console.log('Converting to SVG....');
+    await convertToSVG({ inputPath: outputFile });
 
-    res.send(
-      `File uploaded and processed successfully. Output saved as ${outputFile}`
-    );
+    console.log('Sending file....');
+    res.sendFile(path.join(__dirname, '../uploads/slog.svg'));
   } catch (error) {
     console.error('Error processing file:', error);
     res.status(500).send('Error processing file.');

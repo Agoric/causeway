@@ -411,7 +411,7 @@ async function* slogToDiagram(entries) {
 
 const pipelineAsync = promisify(pipeline);
 
-export const processSlogs = async (inputFile, outputFile) => {
+export const processSlogs = async ({inputFile, outputFile}) => {
   const inputStream = fs.createReadStream(inputFile, { encoding: 'utf-8' });
   const outputStream = fs.createWriteStream(outputFile, {
     encoding: 'utf-8',
