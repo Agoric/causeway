@@ -7,5 +7,5 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - .:/app
+      - .:/app # TODO: Inspect if it has potential side effect with node_modules
     command: bash start-server.sh

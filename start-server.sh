@@ -9,4 +9,4 @@ else
   echo "$PLANTUML_FILE already exists."
 fi
 
-yarn start
+yarn dev
