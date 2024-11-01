@@ -3,11 +3,11 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
   const formData = new FormData();
   const fileInput = document.getElementById('fileInput');
-  const uploadButton = document.getElementById('uploadButton');
+  const uploadButton = document.getElementById('spinnerTimeForm');
 
   formData.append('file', fileInput.files[0]);
 
-  const spinner = document.getElementById('spinner');
+  const spinner = document.getElementById('spinnerFileForm');
   spinner.style.display = 'block';
   uploadButton.disabled = true;
 

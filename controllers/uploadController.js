@@ -48,7 +48,7 @@ export const handleFileUpload = async (req, res) => {
     svgFilePath = path.join(svgDirPath, 'slog.svg');
 
     console.log('Sending file....');
-    res.sendFile(svgFilePath);
+    res.status(200).sendFile(svgFilePath);
   } catch (error) {
     console.error('Error processing file:', error);
     res.status(500).send('Error processing file.');

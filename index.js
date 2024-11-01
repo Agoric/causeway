@@ -13,6 +13,7 @@ const app = express();
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.json());
 app.use(requestLogger);
 app.use('/', router);
 

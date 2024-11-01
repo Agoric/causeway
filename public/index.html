@@ -27,8 +27,8 @@
                     <input type="file" id="fileInput" name="file" accept=".log,.slog,.json" required>
                 </div>
                 <div class="form-group">
-                    <div id="spinner" class="spinner" style="display: none;"></div>
-                    <button id="uploadButton" type="submit">Upload</button>
+                    <div id="spinnerFileForm" class="spinner" style="display: none;"></div>
+                    <button id="uploadFileButton" type="submit">Upload</button>
                 </div>
             </form>
             <p class="message">Supported formats: LOG, SLOG, JSON</p>
@@ -47,7 +47,7 @@
                     <input type="date" id="endDate" name="endDate" required>
                 </div>
                 <div class="form-group">
-                    <div id="spinner" class="spinner" style="display: none;"></div>
+                    <div id="spinnerTimeForm" class="spinner" style="display: none;"></div>
                     <button id="submitTimeButton" type="submit">Submit</button>
                 </div>
             </form>
@@ -58,6 +58,7 @@
     <script src="./scripts/lockdown.js" charset="utf-8"></script>
     <script src="scripts/tabSwitch.js"></script>
     <script src="scripts/upload.js"></script>
+    <script src="scripts/submitTime.js"></script>
 
 </body>
 
