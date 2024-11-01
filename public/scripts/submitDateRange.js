@@ -1,16 +1,16 @@
-document.getElementById('timeForm').addEventListener('submit', async (e) => {
+document.getElementById('dateForm').addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const startDate = document.getElementById('startDate').value;
   const endDate = document.getElementById('endDate').value;
-  const submitButton = document.getElementById('submitTimeButton');
-  const spinner = document.getElementById('spinnerTimeForm');
+  const submitButton = document.getElementById('submitDateButton');
+  const spinner = document.getElementById('spinnerDateForm');
 
   spinner.style.display = 'block';
   submitButton.disabled = true;
 
   try {
-    const response = await fetch('/submit-time-range', {
+    const response = await fetch('/submit-date-range', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -19,9 +19,13 @@ document.getElementById('timeForm').addEventListener('submit', async (e) => {
     });
 
     if (response.ok) {
-      console.log('Time range submitted successfully.');
+      const svgContent = await response.blob();
+      const url = URL.createObjectURL(svgContent);
+
+      const newWindow = window.open();
+      newWindow.document.write(`<img src="${url}" alt="Uploaded SVG Image" />`);
     } else {
-      console.error('Failed to submit time range');
+      console.error('Failed to upload file');
     }
   } catch (error) {
     console.error('Error:', error);

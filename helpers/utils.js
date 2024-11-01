@@ -27,3 +27,9 @@ export const cleanupFiles = async (files, directory) => {
     console.error('Failed to delete files or directory:', error);
   }
 };
+
+export const formatDateString = (dateString) => {
+  const date = new Date(dateString);
+  date.setSeconds(0, 0);
+  return date.toISOString();
+};

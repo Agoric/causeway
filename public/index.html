@@ -16,7 +16,7 @@
         <h2>Choose an Option</h2>
         <div class="tab">
             <button class="tablinks" onclick="openTab(event, 'uploadFileContainer')">Upload File</button>
-            <button class="tablinks" onclick="openTab(event, 'timeSelectContainer')">Select Time</button>
+            <button class="tablinks" onclick="openTab(event, 'dateSelectContainer')">Select Date</button>
         </div>
 
         <div id="uploadFileContainer" class="tabcontent">
@@ -35,20 +35,20 @@
         </div>
 
 
-        <div id="timeSelectContainer" class="tabcontent" style="display:none;">
-            <h3>Select Time Range</h3>
-            <form id="timeForm">
+        <div id="dateSelectContainer" class="tabcontent" style="display:none;">
+            <h2>Select Date Range</h2>
+            <form id="dateForm">
                 <div class="form-group">
-                    <label for="startDate">Start Time:</label>
+                    <label for="startDate">Start Date:</label>
                     <input type="datetime-local" id="startDate" name="startDate" required>
                 </div>
                 <div class="form-group">
-                    <label for="endDate">End Time:</label>
+                    <label for="endDate">End Date:</label>
                     <input type="datetime-local" id="endDate" name="endDate" required>
                 </div>
                 <div class="form-group">
-                    <div id="spinnerTimeForm" class="spinner" style="display: none;"></div>
-                    <button id="submitTimeButton" type="submit">Submit</button>
+                    <div id="spinnerDateForm" class="spinner" style="display: none;"></div>
+                    <button id="submitDateButton" type="submit">Submit</button>
                 </div>
             </form>
         </div>
@@ -58,7 +58,7 @@
     <script src="./scripts/lockdown.js"></script>
     <script src="scripts/tabSwitch.js"></script>
     <script src="scripts/upload.js"></script>
-    <script src="scripts/submitTime.js"></script>
+    <script src="scripts/submitDateRange.js"></script>
 
 </body>
 

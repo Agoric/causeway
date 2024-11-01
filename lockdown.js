@@ -6,4 +6,4 @@ const options = {
   errorTaming: 'unsafe',
 };
 
-lockdown(options);
+// lockdown(options);
