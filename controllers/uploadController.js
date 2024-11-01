@@ -1,4 +1,4 @@
-import fs from 'fs';
+import { fs } from 'zx';
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -10,10 +10,6 @@ const __dirname = path.dirname(__filename);
 
 const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
 const uploadDir = 'uploads';
-
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir);
-}
 
 const storage = multer.diskStorage({
   destination: (_, __, cb) => {
@@ -31,10 +27,14 @@ export const handleFileUpload = async (req, res) => {
     return res.status(400).send('No file uploaded.');
   }
 
-  const inputFile = req.file.path;
-  const outputFile = `${uploadDir}/processed-${req.file.filename}.puml`;
-
   try {
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+
+    const inputFile = req.file.path;
+    const outputFile = `${uploadDir}/processed-${req.file.filename}.puml`;
+
     console.log('Processing Slogs....');
     await processSlogs({ inputFile, outputFile });
 
