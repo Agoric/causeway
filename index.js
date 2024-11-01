@@ -13,6 +13,10 @@ const app = express();
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(
+  '/scripts/ses',
+  express.static(path.join(__dirname, 'node_modules/ses/dist'))
+);
 app.use(express.json());
 app.use(requestLogger);
 app.use('/', router);
