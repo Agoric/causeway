@@ -9,3 +9,21 @@ export const checkFileExists = async ({ filePath, description = 'File' }) => {
     throw Error(`Error: ${description} not found at path: ${filePath}`);
   }
 };
+
+export const cleanupFiles = async (files, directory) => {
+  try {
+    for (const file of files) {
+      if (fs.existsSync(file)) {
+        await fs.promises.unlink(file);
+        console.log(`Deleted file: ${file}`);
+      }
+    }
+
+    if (directory && fs.existsSync(directory)) {
+      await fs.promises.rm(directory, { recursive: true, force: true });
+      console.log(`Deleted directory: ${directory}`);
+    }
+  } catch (error) {
+    console.error('Failed to delete files or directory:', error);
+  }
+};

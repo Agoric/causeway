@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { processSlogs } from '../services/slogProcessor.js';
 import { convertToSVG } from '../services/pumlToSvgConverter.js';
+import { cleanupFiles } from '../helpers/utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,25 +28,34 @@ export const handleFileUpload = async (req, res) => {
     return res.status(400).send('No file uploaded.');
   }
 
+  let inputFile, outputFile, svgFilePath, svgDirPath;
+
   try {
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir);
     }
 
-    const inputFile = req.file.path;
-    const outputFile = `${uploadDir}/processed-${req.file.filename}.puml`;
+    inputFile = req.file.path;
+    outputFile = `${uploadDir}/processed-${req.file.filename}.puml`;
 
     console.log('Processing Slogs....');
     await processSlogs({ inputFile, outputFile });
 
-    const svgDir = `${uniqueSuffix}`;
-    await convertToSVG({ inputPath: outputFile, svgDir });
+    const svgFolder = `${uniqueSuffix}`;
+    await convertToSVG({ pumlFilePath: outputFile, svgDir: svgFolder });
+
+    svgDirPath = path.join(__dirname, '..', `${uploadDir}/${svgFolder}`);
+    svgFilePath = path.join(svgDirPath, 'slog.svg');
 
     console.log('Sending file....');
-    res.sendFile(path.join(__dirname, '..', `${uploadDir}/${svgDir}/slog.svg`));
+    res.sendFile(svgFilePath);
   } catch (error) {
     console.error('Error processing file:', error);
     res.status(500).send('Error processing file.');
+  } finally {
+    console.log('Initiating cleanup...');
+    const filesToClean = [inputFile, outputFile, svgFilePath].filter(Boolean);
+    await cleanupFiles(filesToClean, svgDirPath);
   }
 };
 
