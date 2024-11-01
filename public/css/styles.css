@@ -86,7 +86,6 @@ h2 {
   display: none;
 }
 
-
 .tab {
   overflow: hidden;
   border: 1px solid #ccc;
@@ -117,4 +116,19 @@ h2 {
   padding: 6px 12px;
   border: 1px solid #ccc;
   border-top: none;
+}
+
+input[type='datetime-local'] {
+  background-color: #f4f4f4;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 16px;
+  color: #333;
+}
+
+input[type='datetime-local']:focus {
+  border-color: #0066cc;
+  box-shadow: 0 0 8px rgba(0, 102, 204, 0.5);
+  outline: none;
 }
