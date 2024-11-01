@@ -20,7 +20,22 @@ export const fetchAndStoreLogsFromGCP = async ({
       `FormattedStartDate:${formattedStartDate} FormattedEndDate:${formattedEndDate}`
     );
 
-    const filter = `timestamp >= "${formattedStartDate}" AND timestamp <= "${formattedEndDate}"`;
+    const filter = `
+    timestamp >= "${formattedStartDate}" AND 
+    timestamp <= "${formattedEndDate}" AND 
+    resource.labels.container_name="log-slog" AND
+    resource.labels.cluster_name="puffynet" AND
+    resource.labels.namespace_name="followmain" AND
+    resource.labels.pod_name="followed-0" AND
+    resource.type="puffynet" AND
+    (
+      jsonPayload.type = "create-vat" OR 
+      jsonPayload.type = "cosmic-swingset-end-block-start" OR 
+      jsonPayload.type = "deliver" OR 
+      jsonPayload.type = "deliver-result" OR 
+      jsonPayload.type = "syscall"
+    )
+  `;
 
     let nextPageToken = null;
     let allEntries = [];
@@ -32,7 +47,7 @@ export const fetchAndStoreLogsFromGCP = async ({
         pageToken: nextPageToken,
       };
 
-      const [entries, { nextPageToken: newPageToken }] =
+      const [entries, _, { nextPageToken: newPageToken }] =
         await logging.getEntries(options);
       allEntries = allEntries.concat(entries);
       nextPageToken = newPageToken;
