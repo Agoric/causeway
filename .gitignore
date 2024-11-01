@@ -3,3 +3,4 @@ uploads
 plantuml.jar
 .aider*
 .env
+.DS_Store
