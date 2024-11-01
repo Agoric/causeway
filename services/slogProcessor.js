@@ -1,4 +1,3 @@
-/* eslint-disable no-continue */
 // Source: https://github.com/Agoric/agoric-sdk/blob/slog-to-causeway/packages/SwingSet/misc-tools/slog-to-diagram.mjs
 import { fs } from 'zx';
 import { pipeline } from 'stream';
@@ -114,7 +113,7 @@ async function slogSummary(entries) {
           });
         switch (vd?.[0]) {
           case 'startVat': {
-            const [_tag, vatParams] = vd;
+            const [_tag, _vatParams] = vd;
             dInfo = {
               type: entry.type,
               time: entry.time,
@@ -275,6 +274,7 @@ const fmtPlantUml = freeze({
   response: (src, dest, label) => `${src} --> ${dest} : ${label}\n`,
 });
 
+/* eslint-disable no-unused-vars */
 /**
  * ref: https://mermaid-js.github.io/mermaid/
  */
@@ -298,6 +298,7 @@ const fmtMermaid = freeze({
   /** @type {(s: string, d: string, msg: string) => string} */
   response: (src, dest, label) => `  ${src} -->> ${dest} : ${label}\n`,
 });
+/* eslint-enable no-unused-vars */
 
 /**
  * @param {typeof fmtPlantUml} fmt
@@ -334,7 +335,7 @@ async function* diagramLines(
       method,
       state,
       argSize,
-      compute,
+      _compute,
       blockTime,
     },
   ] of byTime) {

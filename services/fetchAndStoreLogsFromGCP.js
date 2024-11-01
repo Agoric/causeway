@@ -49,7 +49,7 @@ export const fetchAndStoreLogsFromGCP = async ({
         pageToken: nextPageToken,
       };
 
-      const [entries, _, { nextPageToken: newPageToken }] =
+      const [entries, _, { nextPageToken: _newPageToken }] =
         await logging.getEntries(options);
       console.log('Fetched page size: ' + entries.length);
       allEntries = allEntries.concat(entries);

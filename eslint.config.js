@@ -19,4 +19,9 @@ export default [
       'lockdown.js',
     ],
   },
+  {
+    rules: {
+      'no-unused-vars': ['error', { varsIgnorePattern: '^_' }],
+    },
+  },
 ];
