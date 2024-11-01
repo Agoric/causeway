@@ -14,7 +14,10 @@ export const fetchAndStoreLogsFromGCP = async ({
 
     const logging = new Logging();
     const formattedStartDate = formatDateString(startDate);
-    const formattedEndDate = formatDateString(endDate);
+
+    let endDateObj = new Date(startDate);
+    endDateObj.setSeconds(endDateObj.getSeconds() + 20); // Add 10 seconds
+    const formattedEndDate = formatDateString(endDateObj);
 
     console.log(
       `FormattedStartDate:${formattedStartDate} FormattedEndDate:${formattedEndDate}`
@@ -27,7 +30,6 @@ export const fetchAndStoreLogsFromGCP = async ({
     resource.labels.cluster_name="puffynet" AND
     resource.labels.namespace_name="followmain" AND
     resource.labels.pod_name="follower-0" AND
-    resource.type="k8s_container" AND
     (
       jsonPayload.type = "create-vat" OR 
       jsonPayload.type = "cosmic-swingset-end-block-start" OR 
@@ -43,12 +45,13 @@ export const fetchAndStoreLogsFromGCP = async ({
     do {
       const options = {
         filter: filter,
-        pageSize: 100,
+        pageSize: 1000,
         pageToken: nextPageToken,
       };
 
       const [entries, _, { nextPageToken: newPageToken }] =
         await logging.getEntries(options);
+      console.log('Fetched page size: ' + entries.length);
       allEntries = allEntries.concat(entries);
       nextPageToken = null;
     } while (nextPageToken);
