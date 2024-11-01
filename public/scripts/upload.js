@@ -5,6 +5,9 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   const fileInput = document.getElementById('fileInput');
   formData.append('file', fileInput.files[0]);
 
+  const spinner = document.getElementById('spinner');
+  spinner.style.display = 'block';
+
   try {
     const response = await fetch('/upload', {
       method: 'POST',
@@ -22,5 +25,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     }
   } catch (error) {
     console.error('Error:', error);
+  } finally {
+    spinner.style.display = 'none';
   }
 });
