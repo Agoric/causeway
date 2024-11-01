@@ -105,16 +105,16 @@ async function slogSummary(entries) {
         });
         break;
       case 'deliver': {
-        const { vd: kd } = entry;
+        const { vd } = entry;
         if (!vatInfo.has(entry.vatID))
           vatInfo.set(entry.vatID, {
             type: 'create-vat',
             time: entry.time,
             vatID: entry.vatID,
           });
-        switch (kd[0]) {
+        switch (vd?.[0]) {
           case 'startVat': {
-            const [_tag, vatParams] = kd;
+            const [_tag, vatParams] = vd;
             dInfo = {
               type: entry.type,
               time: entry.time,
@@ -135,7 +135,7 @@ async function slogSummary(entries) {
                 methargs: { body },
                 result,
               },
-            ] = kd;
+            ] = vd;
             const jsonString = body.startsWith('#') ? body.slice(1) : body;
             const [method] = JSON.parse(jsonString);
             dInfo = {
@@ -153,7 +153,7 @@ async function slogSummary(entries) {
             break;
           }
           case 'notify': {
-            const [_tag, resolutions] = kd;
+            const [_tag, resolutions] = vd;
             for (const [kp, { state }] of resolutions) {
               dInfo = {
                 type: entry.type,
@@ -168,9 +168,9 @@ async function slogSummary(entries) {
             break;
           }
           default:
-            if (!seen.deliver.has(kd[0])) {
-              console.warn('delivery tag unknown:', kd[0]);
-              seen.deliver.add(kd[0]);
+            if (vd?.length > 0 && !seen.deliver.has(vd[0])) {
+              console.warn('delivery tag unknown:', vd[0]);
+              seen.deliver.add(vd[0]);
             }
             break;
         }
@@ -195,10 +195,10 @@ async function slogSummary(entries) {
         break;
       }
       case 'syscall': {
-        switch (entry.vsc[0]) {
+        switch (entry?.ksc?.[0]) {
           case 'send': {
             const {
-              vsc: [_, target, { method, result }],
+              ksc: [_, target, { method, result }],
             } = entry;
             departure.set(result, {
               type: entry.type,
@@ -227,9 +227,9 @@ async function slogSummary(entries) {
             break;
           }
           default:
-            if (!seen.syscall.has(entry.vsc[0])) {
-              console.warn('syscall tag unknown:', entry.vsc[0]);
-              seen.syscall.add(entry.vsc[0]);
+            if (entry?.ksc?.length > 0 && !seen.syscall.has(entry.ksc[0])) {
+              console.warn('syscall tag unknown:', entry.ksc[0]);
+              seen.syscall.add(entry.ksc[0]);
             }
             // skip
             break;
@@ -410,7 +410,7 @@ async function* slogToDiagram(entries) {
 
 const pipelineAsync = promisify(pipeline);
 
-export const processSlogs = async ({inputFile, outputFile}) => {
+export const processSlogs = async ({ inputFile, outputFile }) => {
   const inputStream = fs.createReadStream(inputFile, { encoding: 'utf-8' });
   const outputStream = fs.createWriteStream(outputFile, {
     encoding: 'utf-8',
