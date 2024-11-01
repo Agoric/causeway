@@ -3,7 +3,7 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
 
   const formData = new FormData();
   const fileInput = document.getElementById('fileInput');
-  const uploadButton = document.getElementById('spinnerTimeForm');
+  const uploadButton = document.getElementById('uploadFileButton');
 
   formData.append('file', fileInput.files[0]);
 

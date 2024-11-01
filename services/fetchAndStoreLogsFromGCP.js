@@ -26,8 +26,8 @@ export const fetchAndStoreLogsFromGCP = async ({
     resource.labels.container_name="log-slog" AND
     resource.labels.cluster_name="puffynet" AND
     resource.labels.namespace_name="followmain" AND
-    resource.labels.pod_name="followed-0" AND
-    resource.type="puffynet" AND
+    resource.labels.pod_name="follower-0" AND
+    resource.type="k8s_container" AND
     (
       jsonPayload.type = "create-vat" OR 
       jsonPayload.type = "cosmic-swingset-end-block-start" OR 
@@ -50,7 +50,7 @@ export const fetchAndStoreLogsFromGCP = async ({
       const [entries, _, { nextPageToken: newPageToken }] =
         await logging.getEntries(options);
       allEntries = allEntries.concat(entries);
-      nextPageToken = newPageToken;
+      nextPageToken = null;
     } while (nextPageToken);
 
     const logEntries = allEntries.map((entry) => JSON.stringify(entry.data));
