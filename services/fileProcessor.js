@@ -1,4 +1,3 @@
-import { fs } from 'zx';
 import path from 'path';
 import { processSlogs } from './slogProcessor.js';
 import { convertToSVG } from './pumlToSvgConverter.js';
@@ -15,10 +14,6 @@ export const processAndConvert = async ({ inputFile, res }) => {
   let outputFile, svgFilePath, svgDirPath;
 
   try {
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir);
-    }
-
     outputFile = `${uploadDir}/processed-${uniqueSuffix}.puml`;
     console.log('Processing Slogs....');
     await processSlogs({ inputFile, outputFile });

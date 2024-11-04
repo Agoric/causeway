@@ -2,14 +2,20 @@ import './lockdown.js';
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { fs } from 'zx';
 import router from './router.js';
 import { requestLogger } from './middleware/requestLogger.js';
 
 const PORT = 3000;
+const UPLOAD_DIR = 'uploads';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR);
+}
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
