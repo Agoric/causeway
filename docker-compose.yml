@@ -8,4 +8,3 @@ services:
       - 3000:3000
     volumes:
       - .:/app # TODO: Inspect if it has potential side effect with node_modules
-    command: bash start-server.sh
