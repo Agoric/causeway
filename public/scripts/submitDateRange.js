@@ -6,9 +6,8 @@ document.getElementById('dateForm').addEventListener('submit', async (e) => {
   const submitButton = document.getElementById('submitDateButton');
   const spinner = document.getElementById('spinnerDateForm');
 
-  spinner.style.display = 'block';
-  submitButton.disabled = true;
-
+  spinner.style.display = 'inline-block';
+  submitButton.style.visibility = 'hidden';
   try {
     const response = await fetch('/submit-date-range', {
       method: 'POST',
@@ -22,8 +21,9 @@ document.getElementById('dateForm').addEventListener('submit', async (e) => {
       const svgContent = await response.blob();
       const url = URL.createObjectURL(svgContent);
 
-      const newWindow = window.open();
-      newWindow.document.write(`<img src="${url}" alt="Uploaded SVG Image" />`);
+      const svgElement = document.getElementById('svgDisplay');
+      svgElement.src = url;
+      svgElement.style.display = 'inline-block';
     } else {
       console.error('Failed to upload file');
     }
@@ -31,6 +31,6 @@ document.getElementById('dateForm').addEventListener('submit', async (e) => {
     console.error('Error:', error);
   } finally {
     spinner.style.display = 'none';
-    submitButton.disabled = false;
+    submitButton.style.visibility = 'visible';
   }
 });

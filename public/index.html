@@ -10,53 +10,26 @@
 </head>
 
 <body>
+    <div class="topbar">
+        <form id="uploadForm" class="formUpload">
+            <input type="file" id="fileInput" name="file" accept=".log,.slog,.json" required>
+            <div id="spinnerFileForm" class="spinner"></div>
+            <button id="uploadFileButton" type="submit">Upload File</button>
+        </form>
+        <form id="dateForm" class="formDateRange">
+            <input type="datetime-local" id="startDate" name="startDate" required>
+            <input type="datetime-local" id="endDate" name="endDate" required>
+            <div id="spinnerDateForm" class="spinner"></div>
+            <button id="submitDateButton" type="submit">Submit Dates</button>
+        </form>
+    </div>
 
-    <div class="container">
-
-        <h2>Choose an Option</h2>
-        <div class="tab">
-            <button class="tablinks" onclick="openTab(event, 'uploadFileContainer')">Upload File</button>
-            <button class="tablinks" onclick="openTab(event, 'dateSelectContainer')">Select Date</button>
-        </div>
-
-        <div id="uploadFileContainer" class="tabcontent">
-            <h2>Upload Your File</h2>
-            <form id="uploadForm" enctype="multipart/form-data">
-                <div class="form-group">
-                    <label for="file">Choose file to upload</label>
-                    <input type="file" id="fileInput" name="file" accept=".log,.slog,.json" required>
-                </div>
-                <div class="form-group">
-                    <div id="spinnerFileForm" class="spinner" style="display: none;"></div>
-                    <button id="uploadFileButton" type="submit">Upload</button>
-                </div>
-            </form>
-            <p class="message">Supported formats: LOG, SLOG, JSON</p>
-        </div>
-
-
-        <div id="dateSelectContainer" class="tabcontent" style="display:none;">
-            <h2>Select Date Range</h2>
-            <form id="dateForm">
-                <div class="form-group">
-                    <label for="startDate">Start Date:</label>
-                    <input type="datetime-local" id="startDate" name="startDate" required>
-                </div>
-                <div class="form-group">
-                    <label for="endDate">End Date:</label>
-                    <input type="datetime-local" id="endDate" name="endDate" required>
-                </div>
-                <div class="form-group">
-                    <div id="spinnerDateForm" class="spinner" style="display: none;"></div>
-                    <button id="submitDateButton" type="submit">Submit</button>
-                </div>
-            </form>
-        </div>
+    <div class="mainBody">
+        <img id="svgDisplay" src="" alt="Causeway SVG">
     </div>
 
     <script src="/scripts/ses/ses.umd.min.js" charset="utf-8"></script>
     <script src="./scripts/lockdown.js"></script>
-    <script src="scripts/tabSwitch.js"></script>
     <script src="scripts/upload.js"></script>
     <script src="scripts/submitDateRange.js"></script>
 
