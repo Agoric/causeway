@@ -8,8 +8,8 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
   formData.append('file', fileInput.files[0]);
 
   const spinner = document.getElementById('spinnerFileForm');
-  spinner.style.display = 'block';
-  uploadButton.disabled = true;
+  spinner.style.display = 'inline-block';
+  uploadButton.style.display = 'none';
 
   try {
     const response = await fetch('/upload', {
@@ -21,8 +21,9 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
       const svgContent = await response.blob();
       const url = URL.createObjectURL(svgContent);
 
-      const newWindow = window.open();
-      newWindow.document.write(`<img src="${url}" alt="Uploaded SVG Image" />`);
+      const svgElement = document.getElementById('svgDisplay');
+      svgElement.src = url;
+      svgElement.style.display = 'inline-block';
     } else {
       console.error('Failed to upload file');
     }
@@ -30,6 +31,6 @@ document.getElementById('uploadForm').addEventListener('submit', async (e) => {
     console.error('Error:', error);
   } finally {
     spinner.style.display = 'none';
-    uploadButton.disabled = false;
+    uploadButton.style.display = 'inline-block';
   }
 });
