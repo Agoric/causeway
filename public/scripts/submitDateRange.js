@@ -7,8 +7,7 @@ document.getElementById('dateForm').addEventListener('submit', async (e) => {
   const spinner = document.getElementById('spinnerDateForm');
 
   spinner.style.display = 'inline-block';
-  submitButton.style.display = 'none';
-
+  submitButton.style.visibility = 'hidden';
   try {
     const response = await fetch('/submit-date-range', {
       method: 'POST',
@@ -32,6 +31,6 @@ document.getElementById('dateForm').addEventListener('submit', async (e) => {
     console.error('Error:', error);
   } finally {
     spinner.style.display = 'none';
-    submitButton.style.display = 'inline-block';
+    submitButton.style.visibility = 'visible';
   }
 });
