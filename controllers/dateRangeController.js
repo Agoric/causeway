@@ -10,11 +10,9 @@ const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
 const uploadDir = 'uploads';
 
 export const handleDateRange = async (req, res) => {
-  const { startDate, endDate } = req.body;
-  if (!startDate || !endDate) {
-    return res
-      .status(400)
-      .json({ message: 'Both start date and end date are required.' });
+  const { startDate } = req.body;
+  if (!startDate) {
+    return res.status(400).json({ message: 'Start date is required.' });
   }
 
   const inputFile = path.join(
@@ -23,7 +21,7 @@ export const handleDateRange = async (req, res) => {
     `${uploadDir}/${uniqueSuffix}.json`
   );
   console.log('Fetching data from GCP...');
-  await fetchAndStoreLogsFromGCP({ startDate, endDate, inputFile });
+  await fetchAndStoreLogsFromGCP({ startDate, inputFile });
 
   await processAndConvert({ inputFile, res });
 };

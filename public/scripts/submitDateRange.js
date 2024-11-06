@@ -2,7 +2,6 @@ document.getElementById('dateForm').addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const startDate = document.getElementById('startDate').value;
-  const endDate = document.getElementById('endDate').value;
   const submitButton = document.getElementById('submitDateButton');
   const spinner = document.getElementById('spinnerDateForm');
 
@@ -14,7 +13,7 @@ document.getElementById('dateForm').addEventListener('submit', async (e) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ startDate, endDate }),
+      body: JSON.stringify({ startDate }),
     });
 
     if (response.ok) {
