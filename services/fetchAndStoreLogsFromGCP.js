@@ -2,22 +2,16 @@ import { Logging } from '@google-cloud/logging';
 import { formatDateString } from '../helpers/utils.js';
 import { fs } from 'zx';
 
-export const fetchAndStoreLogsFromGCP = async ({
-  startDate,
-  endDate,
-  inputFile,
-}) => {
+export const fetchAndStoreLogsFromGCP = async ({ startDate, inputFile }) => {
   try {
-    console.log(
-      `startDate:${startDate} endDate:${endDate} inputFile:${inputFile}`
-    );
+    console.log(`startDate:${startDate}`);
 
     const logging = new Logging();
     const formattedStartDate = formatDateString(startDate);
 
-    let endDateObj = new Date(startDate);
-    endDateObj.setSeconds(endDateObj.getSeconds() + 20); // Add 10 seconds
-    const formattedEndDate = formatDateString(endDateObj);
+    let endDate = new Date(startDate);
+    endDate.setSeconds(endDate.getSeconds() + 20); // Add 20 seconds
+    const formattedEndDate = formatDateString(endDate);
 
     console.log(
       `FormattedStartDate:${formattedStartDate} FormattedEndDate:${formattedEndDate}`

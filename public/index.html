@@ -15,13 +15,20 @@
             <input type="file" id="fileInput" name="file" accept=".log,.slog,.json" required>
             <div id="spinnerFileForm" class="spinner"></div>
             <button id="uploadFileButton" type="submit">Upload File</button>
-            <p id="fileType">Supported: .log, .slog, .json</p>
+            <div id="fileHelperText">
+                <p id="helperText">Supported: .log, .slog, .json</p>
+                <p id="helperText"> Maximum file size: 50MB.</p>
+            </div>
         </form>
         <form id="dateForm" class="formDateRange">
-            <input type="datetime-local" id="startDate" name="startDate" required>
-            <input type="datetime-local" id="endDate" name="endDate" required>
-            <div id="spinnerDateForm" class="spinner"></div>
-            <button id="submitDateButton" type="submit">Submit Dates</button>
+            <div>
+                <input type="datetime-local" id="startDate" name="startDate" required>
+                <div id="spinnerDateForm" class="spinner"></div>
+                <button id="submitDateButton" type="submit">Submit Date</button>
+            </div>
+            <div id="fileHelperText">
+                <p id="helperText">Specify a date range to view logs over a 20-second interval.</p>
+            </div>
         </form>
     </div>
 
