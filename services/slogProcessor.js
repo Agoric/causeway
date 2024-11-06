@@ -1,4 +1,4 @@
-// Source: https://github.com/Agoric/agoric-sdk/blob/slog-to-causeway/packages/SwingSet/misc-tools/slog-to-diagram.mjs
+// Source: https://github.com/Agoric/agoric-sdk/blob/2ee9664ffacae4d958eed998bad1030e961134b8/packages/SwingSet/misc-tools/slog-to-diagram.mjs
 import { fs } from 'zx';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
@@ -104,16 +104,16 @@ async function slogSummary(entries) {
         });
         break;
       case 'deliver': {
-        const { vd } = entry;
+        const { kd } = entry;
         if (!vatInfo.has(entry.vatID))
           vatInfo.set(entry.vatID, {
             type: 'create-vat',
             time: entry.time,
             vatID: entry.vatID,
           });
-        switch (vd?.[0]) {
+        switch (kd?.[0]) {
           case 'startVat': {
-            const [_tag, _vatParams] = vd;
+            const [_tag, _vatParams] = kd;
             dInfo = {
               type: entry.type,
               time: entry.time,
@@ -134,7 +134,7 @@ async function slogSummary(entries) {
                 methargs: { body },
                 result,
               },
-            ] = vd;
+            ] = kd;
             const jsonString = body.startsWith('#') ? body.slice(1) : body;
             const [method] = JSON.parse(jsonString);
             dInfo = {
@@ -152,7 +152,7 @@ async function slogSummary(entries) {
             break;
           }
           case 'notify': {
-            const [_tag, resolutions] = vd;
+            const [_tag, resolutions] = kd;
             for (const [kp, { state }] of resolutions) {
               dInfo = {
                 type: entry.type,
@@ -167,9 +167,9 @@ async function slogSummary(entries) {
             break;
           }
           default:
-            if (vd?.length > 0 && !seen.deliver.has(vd[0])) {
-              console.warn('delivery tag unknown:', vd[0]);
-              seen.deliver.add(vd[0]);
+            if (!seen.deliver.has(kd?.[0])) {
+              console.warn('delivery tag unknown:', kd?.[0]);
+              seen.deliver.add(kd?.[0]);
             }
             break;
         }
@@ -194,7 +194,7 @@ async function slogSummary(entries) {
         break;
       }
       case 'syscall': {
-        switch (entry?.ksc?.[0]) {
+        switch (entry.ksc?.[0]) {
           case 'send': {
             const {
               ksc: [_, target, { method, result }],
@@ -209,10 +209,6 @@ async function slogSummary(entries) {
             break;
           }
           case 'resolve': {
-            if (!entry || !entry.ksc) {
-              console.error('Entry or entry.ksc is undefined');
-              break;
-            }
             const {
               ksc: [_, _thatVat, parts],
             } = entry;
@@ -226,9 +222,9 @@ async function slogSummary(entries) {
             break;
           }
           default:
-            if (entry?.ksc?.length > 0 && !seen.syscall.has(entry.ksc[0])) {
-              console.warn('syscall tag unknown:', entry.ksc[0]);
-              seen.syscall.add(entry.ksc[0]);
+            if (!seen.syscall.has(entry.ksc?.[0])) {
+              console.warn('syscall tag unknown:', entry.ksc?.[0]);
+              seen.syscall.add(entry.ksc?.[0]);
             }
             // skip
             break;
