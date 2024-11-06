@@ -73,3 +73,9 @@ input[type='file'] {
   border: 1px solid #ccc;
   display: none;
 }
+
+#fileType {
+  font-size: 0.8rem;
+  white-space: nowrap;
+  font-weight: bold;
+}
