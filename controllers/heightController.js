@@ -23,7 +23,7 @@ export const handleHeightLogs = async (req, res) => {
   console.log('Fetching data from GCP...');
 
   const queryfilter = `
-  blockHeight = ${height}
+  jsonPayload.blockHeight = "${height}"
 `;
 
   await fetchAndStoreLogsFromGCP({ inputFile, queryfilter });
