@@ -1,5 +1,4 @@
 import { Logging } from '@google-cloud/logging';
-import { formatDateString } from '../helpers/utils.js';
 import { fs } from 'zx';
 
 export const fetchAndStoreLogsFromGCP = async ({ inputFile, queryfilter }) => {

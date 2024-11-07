@@ -2,6 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchAndStoreLogsFromGCP } from '../services/fetchAndStoreLogsFromGCP.js';
 import { processAndConvert } from '../services/fileProcessor.js';
+import { formatDateString } from '../helpers/utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
