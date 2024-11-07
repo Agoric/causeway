@@ -9,10 +9,10 @@ const __dirname = path.dirname(__filename);
 const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
 const uploadDir = 'uploads';
 
-export const handleDateRange = async (req, res) => {
-  const { startDate } = req.body;
-  if (!startDate) {
-    return res.status(400).json({ message: 'Start date is required.' });
+export const handleHeightLogs = async (req, res) => {
+  const { height } = req.body;
+  if (!height) {
+    return res.status(400).json({ message: 'Height is required.' });
   }
 
   const inputFile = path.join(
@@ -22,21 +22,9 @@ export const handleDateRange = async (req, res) => {
   );
   console.log('Fetching data from GCP...');
 
-  console.log(`startDate:${startDate}`);
-  const formattedStartDate = formatDateString(startDate);
-
-  let endDate = new Date(startDate);
-  endDate.setSeconds(endDate.getSeconds() + 20); // Add 20 seconds
-  const formattedEndDate = formatDateString(endDate);
-
-  console.log(
-    `FormattedStartDate:${formattedStartDate} FormattedEndDate:${formattedEndDate}`
-  );
-
   const queryfilter = `
-    timestamp >= "${formattedStartDate}" AND 
-    timestamp <= "${formattedEndDate}" AND 
-  `;
+  blockHeight = ${height}
+`;
 
   await fetchAndStoreLogsFromGCP({ inputFile, queryfilter });
   await processAndConvert({ inputFile, res });
