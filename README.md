@@ -1,6 +1,13 @@
 # Causeway
 
+
+
 **Causeway** is a web application designed to transform chain logs into insightful visual representations. It supports both `.json` and `.slog` file formats, enabling users to visualize complex log data through a straightforward web interface.
+
+## Prior Art:
+This work is inspired by contributions from Terry Stanley, Tyler Close, and Mark Miller: [Causeway Project by E-Lang](http://www.erights.org/elang/tools/causeway/)
+
+The original code used in this repo, written by @dckc, processes slogs to generate SVG and can be found here: [Agoric SDK Pull Request #3624](https://github.com/Agoric/agoric-sdk/pull/3624)
 
 ## How It Works
 
