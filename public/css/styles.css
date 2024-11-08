@@ -14,12 +14,6 @@ html {
   border-bottom: 2px solid #ddd;
 }
 
-.uploadForm {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .formDateRange,
 .formBlockHeight {
   display: flex;
@@ -66,15 +60,18 @@ html {
   transition: background-color 0.3s;
 }
 
-input[type='number'],
-input[type='datetime-local'],
-input[type='file'] {
+input,
+select {
   background-color: #f4f4f4;
   border: 1px solid #ccc;
   border-radius: 4px;
   padding: 4px;
   font-size: 14px;
   color: #333;
+}
+
+select {
+  width: 120px;
 }
 
 .mainBody {

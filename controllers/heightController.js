@@ -10,20 +10,20 @@ const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
 const uploadDir = 'uploads';
 
 export const handleHeightLogs = async (req, res) => {
-  const { height } = req.body;
+  const { height, network } = req.body;
   if (!height) {
     return res.status(400).json({ message: 'Height is required.' });
   }
 
-  console.log(`Height received: ${height}`);
+  console.log(`height:${height} AND AGORIC_NET:${network}`);
 
   const inputFile = path.join(
     __dirname,
     '..',
     `${uploadDir}/${uniqueSuffix}.json`
   );
-  console.log('Fetching data from GCP...');
 
+  console.log('Fetching data from GCP...');
   await fetchGCPLogsForHeight({
     startBlockHeight: height,
     endBlockHeight: height,

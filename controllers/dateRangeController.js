@@ -11,21 +11,20 @@ const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
 const uploadDir = 'uploads';
 
 export const handleDateRange = async (req, res) => {
-  const { startDate } = req.body;
+  const { startDate, network } = req.body;
   if (!startDate) {
     return res.status(400).json({ message: 'Start date is required.' });
   }
+
+  console.log(`startDate:${startDate} AND AGORIC_NET:${network}`);
 
   const inputFile = path.join(
     __dirname,
     '..',
     `${uploadDir}/${uniqueSuffix}.json`
   );
-  console.log('Fetching data from GCP...');
 
-  console.log(`startDate:${startDate}`);
   const formattedStartDate = formatDateString(startDate);
-
   let endDate = new Date(startDate);
   endDate.setSeconds(endDate.getSeconds() + 20); // Add 20 seconds
   const formattedEndDate = formatDateString(endDate);
@@ -34,6 +33,7 @@ export const handleDateRange = async (req, res) => {
     `FormattedStartDate:${formattedStartDate} FormattedEndDate:${formattedEndDate}`
   );
 
+  console.log(`Fetching data from GCP for...`);
   await fetchAndStoreLogsFromGCP({
     startTime: formattedStartDate,
     endTime: formattedEndDate,

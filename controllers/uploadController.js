@@ -19,6 +19,7 @@ export const handleFileUpload = async (req, res) => {
   if (!req.file) {
     return res.status(400).send('No file uploaded.');
   }
+
   const inputFile = req.file.path;
   await processAndConvert({ inputFile, res });
 };

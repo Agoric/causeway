@@ -3,9 +3,10 @@ document
   .addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    const blockHeight = document.getElementById('blockHeight').value;
+    const height = document.getElementById('blockHeight').value;
     const spinner = document.getElementById('spinnerHeightForm');
     const submitButton = document.getElementById('submitHeightButton');
+    const network = document.getElementById('networkSelect').value;
 
     spinner.style.display = 'inline-block';
     submitButton.style.visibility = 'hidden';
@@ -15,7 +16,7 @@ document
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ height: blockHeight }),
+        body: JSON.stringify({ height, network }),
       });
 
       if (response.ok) {
