@@ -34,11 +34,10 @@ export const handleDateRange = async (req, res) => {
     `FormattedStartDate:${formattedStartDate} FormattedEndDate:${formattedEndDate}`
   );
 
-  const queryfilter = `
-    timestamp >= "${formattedStartDate}" AND 
-    timestamp <= "${formattedEndDate}" AND 
-  `;
-
-  await fetchAndStoreLogsFromGCP({ inputFile, queryfilter });
+  await fetchAndStoreLogsFromGCP({
+    startTime: formattedStartDate,
+    endTime: formattedEndDate,
+    inputFile,
+  });
   await processAndConvert({ inputFile, res });
 };

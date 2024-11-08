@@ -26,6 +26,6 @@ export const handleHeightLogs = async (req, res) => {
   jsonPayload.blockHeight = "${height}"
 `;
 
-  await fetchAndStoreLogsFromGCP({ inputFile, queryfilter });
-  await processAndConvert({ inputFile, res });
+  // await fetchAndStoreLogsFromGCP({ inputFile, queryfilter });
+  // await processAndConvert({ inputFile, res });
 };

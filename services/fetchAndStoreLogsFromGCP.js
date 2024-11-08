@@ -1,43 +1,29 @@
-import { Logging } from '@google-cloud/logging';
+// @ts-check
 import { fs } from 'zx';
+import { fetchGCPLogs } from './fetchGCPLogs.js';
 
-export const fetchAndStoreLogsFromGCP = async ({ inputFile, queryfilter }) => {
+export const fetchAndStoreLogsFromGCP = async ({
+  startTime,
+  endTime,
+  inputFile,
+  queryfilter,
+}) => {
   try {
-    const logging = new Logging();
-
-    const filter = `
-    ${queryfilter}
-    resource.labels.container_name="log-slog" AND
-    resource.labels.cluster_name="puffynet" AND
-    resource.labels.namespace_name="followmain" AND
-    resource.labels.pod_name="follower-0" AND
-    (
-      jsonPayload.type = "create-vat" OR 
-      jsonPayload.type = "cosmic-swingset-end-block-start" OR 
-      jsonPayload.type = "deliver" OR 
-      jsonPayload.type = "deliver-result" OR 
-      jsonPayload.type = "syscall"
-    )
-  `;
-
-    let nextPageToken = null;
     let allEntries = [];
 
-    do {
-      const options = {
-        filter: filter,
-        pageSize: 1000,
-        pageToken: nextPageToken,
-      };
+    const { entries } = await fetchGCPLogs({
+      startTime,
+      endTime,
+      filter: queryfilter,
+      pageSize: 1000,
+    });
 
-      const [entries, _, { nextPageToken: _newPageToken }] =
-        await logging.getEntries(options);
-      console.log('Fetched page size: ' + entries.length);
-      allEntries = allEntries.concat(entries);
-      nextPageToken = null;
-    } while (nextPageToken);
+    console.log('Fetched page size: ' + entries.length);
+    allEntries = allEntries.concat(entries);
 
-    const logEntries = allEntries.map((entry) => JSON.stringify(entry.data));
+    const logEntries = allEntries.map((entry) =>
+      JSON.stringify(entry.jsonPayload)
+    );
 
     fs.writeFile(inputFile, logEntries.join('\n'), (err) => {
       if (err) {
@@ -47,7 +33,7 @@ export const fetchAndStoreLogsFromGCP = async ({ inputFile, queryfilter }) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching logs from GCP:', error.message);
+    console.error(error.message);
     console.error('Stack trace:', error.stack);
   }
 };
