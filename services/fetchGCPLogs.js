@@ -2,6 +2,7 @@
 import { serviceAccount, accessToken } from '../helpers/credentials.js';
 
 const LOG_ENTRIES_ENDPOINT = 'https://logging.googleapis.com/v2/entries:list';
+// eslint-disable-next-line no-unused-vars
 const COMMIT_BLOCK_FINISH_EVENT_TYPE = 'cosmic-swingset-commit-block-finish';
 const ADDITIONAL_FILTERS = `
     (
@@ -67,8 +68,8 @@ export const fetchGCPLogs = async ({
   pageToken = undefined,
 }) => {
   const fullFilter = `
-  ${filter}
-  ${ADDITIONAL_FILTERS}
+  ${filter} AND
+  ${ADDITIONAL_FILTERS} AND
   timestamp >= "${startTime}" AND timestamp <= "${endTime}"
     `;
 
