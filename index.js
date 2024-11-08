@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { fs } from 'zx';
 import router from './router.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { setupCredentials } from './helpers/credentials.js';
 
 const PORT = 3000;
 const UPLOAD_DIR = 'uploads';
@@ -12,6 +13,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+
+setupCredentials()
+  .then(() => {
+    console.log('Credentials setup successfully');
+  })
+  .catch((error) => {
+    console.error('Failed to set up credentials:', error);
+    process.exit(1);
+  });
 
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR);

@@ -11,6 +11,18 @@
 
 <body>
     <div class="topbar">
+
+        <form id="networkForm" class="formNetwork">
+            <select id="networkSelect" name="network">
+                <option value="emerynet">Emerynet</option>
+                <option value="devnet">Devnet</option>
+                <option value="mainnet">Mainnet</option>
+            </select>
+            <div id="fileHelperText">
+                <p id="helperText">Select Network</p>
+            </div>
+        </form>
+
         <form id="uploadForm" class="formUpload">
             <input type="file" id="fileInput" name="file" accept=".log,.slog,.json" required>
             <div id="spinnerFileForm" class="spinner"></div>
@@ -20,6 +32,7 @@
                 <p id="helperText"> Maximum file size: 50MB.</p>
             </div>
         </form>
+
         <form id="dateForm" class="formDateRange">
             <div>
                 <input type="datetime-local" id="startDate" name="startDate" required>
@@ -30,6 +43,18 @@
                 <p id="helperText">Specify a date range to view logs over a 20-second interval.</p>
             </div>
         </form>
+
+        <form id="blockHeightForm" class="formBlockHeight">
+            <div>
+                <input type="number" id="blockHeight" name="blockHeight" required>
+                <div id="spinnerHeightForm" class="spinner"></div>
+                <button id="submitHeightButton" type="submit">Submit Height</button>
+            </div>
+            <div id="fileHelperText">
+                <p id="helperText">Enter a Block Height</p>
+            </div>
+        </form>
+
     </div>
 
     <div class="mainBody">
@@ -40,6 +65,7 @@
     <script src="./scripts/lockdown.js"></script>
     <script src="scripts/upload.js"></script>
     <script src="scripts/submitDateRange.js"></script>
+    <script src="scripts/submitHeight.js"></script>
 
 </body>
 

@@ -14,13 +14,8 @@ html {
   border-bottom: 2px solid #ddd;
 }
 
-.uploadForm {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.formDateRange {
+.formDateRange,
+.formBlockHeight {
   display: flex;
   flex-direction: column;
   align-items: start;
@@ -52,6 +47,7 @@ html {
   }
 }
 
+#submitHeightButton,
 #uploadFileButton,
 #submitDateButton {
   background-color: #007bff;
@@ -64,14 +60,18 @@ html {
   transition: background-color 0.3s;
 }
 
-input[type='datetime-local'],
-input[type='file'] {
+input,
+select {
   background-color: #f4f4f4;
   border: 1px solid #ccc;
   border-radius: 4px;
   padding: 4px;
   font-size: 14px;
   color: #333;
+}
+
+select {
+  width: 120px;
 }
 
 .mainBody {
@@ -95,6 +95,7 @@ input[type='file'] {
   font-weight: 500;
 }
 
-#dateForm > #fileHelperText > p {
+#dateForm > #fileHelperText > p,
+#blockHeightForm > #fileHelperText > p {
   margin: 0;
 }

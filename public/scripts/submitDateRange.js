@@ -4,6 +4,7 @@ document.getElementById('dateForm').addEventListener('submit', async (e) => {
   const startDate = document.getElementById('startDate').value;
   const submitButton = document.getElementById('submitDateButton');
   const spinner = document.getElementById('spinnerDateForm');
+  const network = document.getElementById('networkSelect').value;
 
   spinner.style.display = 'inline-block';
   submitButton.style.visibility = 'hidden';
@@ -13,7 +14,7 @@ document.getElementById('dateForm').addEventListener('submit', async (e) => {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ startDate }),
+      body: JSON.stringify({ startDate, network }),
     });
 
     if (response.ok) {

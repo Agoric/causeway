@@ -1,56 +1,33 @@
-import { Logging } from '@google-cloud/logging';
-import { formatDateString } from '../helpers/utils.js';
+// @ts-check
 import { fs } from 'zx';
+import { fetchGCPLogs } from './fetchGCPLogs.js';
 
-export const fetchAndStoreLogsFromGCP = async ({ startDate, inputFile }) => {
+export const fetchAndStoreLogsFromGCP = async ({
+  startTime,
+  endTime,
+  inputFile,
+  queryfilter = '',
+}) => {
   try {
-    console.log(`startDate:${startDate}`);
-
-    const logging = new Logging();
-    const formattedStartDate = formatDateString(startDate);
-
-    let endDate = new Date(startDate);
-    endDate.setSeconds(endDate.getSeconds() + 20); // Add 20 seconds
-    const formattedEndDate = formatDateString(endDate);
-
-    console.log(
-      `FormattedStartDate:${formattedStartDate} FormattedEndDate:${formattedEndDate}`
-    );
-
-    const filter = `
-    timestamp >= "${formattedStartDate}" AND 
-    timestamp <= "${formattedEndDate}" AND 
-    resource.labels.container_name="log-slog" AND
-    resource.labels.cluster_name="puffynet" AND
-    resource.labels.namespace_name="followmain" AND
-    resource.labels.pod_name="follower-0" AND
-    (
-      jsonPayload.type = "create-vat" OR 
-      jsonPayload.type = "cosmic-swingset-end-block-start" OR 
-      jsonPayload.type = "deliver" OR 
-      jsonPayload.type = "deliver-result" OR 
-      jsonPayload.type = "syscall"
-    )
-  `;
-
-    let nextPageToken = null;
     let allEntries = [];
 
-    do {
-      const options = {
-        filter: filter,
-        pageSize: 1000,
-        pageToken: nextPageToken,
-      };
+    const { entries } = await fetchGCPLogs({
+      startTime,
+      endTime,
+      filter: queryfilter,
+      pageSize: 1000,
+    });
 
-      const [entries, _, { nextPageToken: _newPageToken }] =
-        await logging.getEntries(options);
-      console.log('Fetched page size: ' + entries.length);
-      allEntries = allEntries.concat(entries);
-      nextPageToken = null;
-    } while (nextPageToken);
+    if (!entries) {
+      throw Error('No Entries found for the given date');
+    }
 
-    const logEntries = allEntries.map((entry) => JSON.stringify(entry.data));
+    console.log('Fetched page size: ' + entries.length);
+    allEntries = allEntries.concat(entries);
+
+    const logEntries = allEntries.map((entry) =>
+      JSON.stringify(entry.jsonPayload)
+    );
 
     fs.writeFile(inputFile, logEntries.join('\n'), (err) => {
       if (err) {
@@ -59,8 +36,10 @@ export const fetchAndStoreLogsFromGCP = async ({ startDate, inputFile }) => {
         console.log('Logs successfully stored in:', inputFile);
       }
     });
+
+    return true;
   } catch (error) {
-    console.error('Error fetching logs from GCP:', error.message);
+    console.error(error.message);
     console.error('Stack trace:', error.stack);
   }
 };
