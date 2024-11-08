@@ -18,6 +18,10 @@ export const fetchAndStoreLogsFromGCP = async ({
       pageSize: 1000,
     });
 
+    if (!entries) {
+      throw Error('No Entries found for the given date');
+    }
+
     console.log('Fetched page size: ' + entries.length);
     allEntries = allEntries.concat(entries);
 
@@ -32,6 +36,8 @@ export const fetchAndStoreLogsFromGCP = async ({
         console.log('Logs successfully stored in:', inputFile);
       }
     });
+
+    return true;
   } catch (error) {
     console.error(error.message);
     console.error('Stack trace:', error.stack);

@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchAndStoreLogsFromGCP } from '../services/fetchAndStoreLogsFromGCP.js';
 import { processAndConvert } from '../services/fileProcessor.js';
-import { formatDateString } from '../helpers/utils.js';
+import { cleanupFiles, formatDateString } from '../helpers/utils.js';
 import { networks } from '../helpers/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,11 +54,17 @@ export const handleDateRange = async (req, res) => {
   `;
 
   console.log(`Fetching data from GCP for...`);
-  await fetchAndStoreLogsFromGCP({
+  const isSuccessful = await fetchAndStoreLogsFromGCP({
     startTime: formattedStartDate,
     endTime: formattedEndDate,
     inputFile,
     queryfilter,
   });
+
+  if (!isSuccessful) {
+    await cleanupFiles([inputFile]);
+    return res.status(500).send('Unable to fetch logs');
+  }
+
   await processAndConvert({ inputFile, res });
 };

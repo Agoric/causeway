@@ -58,6 +58,7 @@ const ADDITIONAL_FILTERS = `
  * @param {string} [params.filter=''] - Optional filter to narrow down log entries.
  * @param {number} [params.pageSize] - Optional number of entries to retrieve per page.
  * @param {string} [params.pageToken] - Optional token for pagination.
+ * @param {boolean} [params.isHeight] - Optional boolean param to update query
  * @returns {Promise<{entries: Array<LogEntry>, nextPageToken?: string}>} - A promise that resolves with log entries and an optional token for the next page.
  */
 export const fetchGCPLogs = async ({
@@ -66,10 +67,12 @@ export const fetchGCPLogs = async ({
   filter = '',
   pageSize = undefined,
   pageToken = undefined,
+  isHeight = false,
 }) => {
+  const additionalQueryFilter = isHeight ? '' : `${ADDITIONAL_FILTERS} AND`;
   const fullFilter = `
   ${filter} AND
-  ${ADDITIONAL_FILTERS} AND
+  ${additionalQueryFilter}
   timestamp >= "${startTime}" AND timestamp <= "${endTime}"
     `;
 
