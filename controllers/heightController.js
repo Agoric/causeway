@@ -1,7 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { fetchAndStoreLogsFromGCP } from '../services/fetchAndStoreLogsFromGCP.js';
 import { processAndConvert } from '../services/fileProcessor.js';
+import { fetchGCPLogsForHeight } from '../services/fetchGCPLogsForHeight.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,6 +15,8 @@ export const handleHeightLogs = async (req, res) => {
     return res.status(400).json({ message: 'Height is required.' });
   }
 
+  console.log(`Height received: ${height}`);
+
   const inputFile = path.join(
     __dirname,
     '..',
@@ -22,10 +24,10 @@ export const handleHeightLogs = async (req, res) => {
   );
   console.log('Fetching data from GCP...');
 
-  const queryfilter = `
-  jsonPayload.blockHeight = "${height}"
-`;
-
-  // await fetchAndStoreLogsFromGCP({ inputFile, queryfilter });
-  // await processAndConvert({ inputFile, res });
+  await fetchGCPLogsForHeight({
+    startBlockHeight: height,
+    endBlockHeight: height,
+    inputFile,
+  });
+  await processAndConvert({ inputFile, res });
 };

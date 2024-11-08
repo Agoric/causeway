@@ -4,8 +4,8 @@ document
     e.preventDefault();
 
     const blockHeight = document.getElementById('blockHeight').value;
-    const submitButton = document.getElementById('spinnerHeightForm');
-    const spinner = document.getElementById('submitHeightButton');
+    const spinner = document.getElementById('spinnerHeightForm');
+    const submitButton = document.getElementById('submitHeightButton');
 
     spinner.style.display = 'inline-block';
     submitButton.style.visibility = 'hidden';

@@ -6,7 +6,7 @@ export const fetchAndStoreLogsFromGCP = async ({
   startTime,
   endTime,
   inputFile,
-  queryfilter,
+  queryfilter = '',
 }) => {
   try {
     let allEntries = [];
