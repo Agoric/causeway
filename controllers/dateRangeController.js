@@ -1,8 +1,10 @@
+// @ts-check
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { fetchAndStoreLogsFromGCP } from '../services/fetchAndStoreLogsFromGCP.js';
 import { processAndConvert } from '../services/fileProcessor.js';
 import { formatDateString } from '../helpers/utils.js';
+import { networks } from '../helpers/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,6 +16,10 @@ export const handleDateRange = async (req, res) => {
   const { startDate, network } = req.body;
   if (!startDate) {
     return res.status(400).json({ message: 'Start date is required.' });
+  }
+
+  if (!network || !networks[network]) {
+    return res.status(400).json({ error: 'Bad Request: Network not found' });
   }
 
   console.log(`startDate:${startDate} AND AGORIC_NET:${network}`);
@@ -33,11 +39,19 @@ export const handleDateRange = async (req, res) => {
     `FormattedStartDate:${formattedStartDate} FormattedEndDate:${formattedEndDate}`
   );
 
+  const queryfilter = `
+    resource.labels.container_name="${networks[network].container_name}" AND
+    resource.labels.cluster_name="${networks[network].cluster_name}" AND
+    resource.labels.namespace_name="${networks[network].namespace_name}" AND
+    resource.labels.pod_name="${networks[network].pod_name}" AND
+  `;
+
   console.log(`Fetching data from GCP for...`);
   await fetchAndStoreLogsFromGCP({
     startTime: formattedStartDate,
     endTime: formattedEndDate,
     inputFile,
+    queryfilter,
   });
   await processAndConvert({ inputFile, res });
 };

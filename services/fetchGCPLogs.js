@@ -4,10 +4,6 @@ import { serviceAccount, accessToken } from '../helpers/credentials.js';
 const LOG_ENTRIES_ENDPOINT = 'https://logging.googleapis.com/v2/entries:list';
 const COMMIT_BLOCK_FINISH_EVENT_TYPE = 'cosmic-swingset-commit-block-finish';
 const ADDITIONAL_FILTERS = `
-    resource.labels.container_name="log-slog" AND
-    resource.labels.cluster_name="puffynet" AND
-    resource.labels.namespace_name="followmain" AND
-    resource.labels.pod_name="follower-0" AND
     (
         jsonPayload.type = "create-vat" OR 
         jsonPayload.type = "cosmic-swingset-end-block-start" OR 
@@ -71,8 +67,8 @@ export const fetchGCPLogs = async ({
   pageToken = undefined,
 }) => {
   const fullFilter = `
-  ${ADDITIONAL_FILTERS}
   ${filter}
+  ${ADDITIONAL_FILTERS}
   timestamp >= "${startTime}" AND timestamp <= "${endTime}"
     `;
 
