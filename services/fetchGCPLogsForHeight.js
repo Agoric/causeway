@@ -9,7 +9,7 @@ import { fetchGCPLogs } from './fetchGCPLogs.js';
  */
 const searchForLogEntry = async (filter) => {
   const now = new Date();
-  const maxDays = 5;
+  const maxDays = 15;
   const chunkSize = 6 * 60 * 60 * 1000; // 6 hours
 
   for (
