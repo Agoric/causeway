@@ -1,7 +1,6 @@
 import multer from 'multer';
 import { processAndConvert } from '../services/fileProcessor.js';
 
-const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
 const uploadDir = 'uploads';
 
 const storage = multer.diskStorage({
@@ -9,6 +8,7 @@ const storage = multer.diskStorage({
     cb(null, uploadDir);
   },
   filename: (_, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
     cb(null, uniqueSuffix + '-' + file.originalname);
   },
 });

@@ -6,14 +6,14 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
 const uploadDir = 'uploads';
 
 export const processAndConvert = async ({ inputFile, res }) => {
   let outputFile, svgFilePath, svgDirPath;
 
   try {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+
     outputFile = `${uploadDir}/processed-${uniqueSuffix}.puml`;
     console.log('Processing Slogs....');
     await processSlogs({ inputFile, outputFile });
