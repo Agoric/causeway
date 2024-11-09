@@ -1,7 +1,6 @@
 // @ts-check
 import { getAccessToken } from '../helpers/getAccessToken.js';
 import { networks } from '../helpers/constants.js';
-import { logError } from '../helpers/logGCPError.js';
 import { getCredentials } from '../helpers/getGCPCredentials.js';
 import { fetchGCPLogs } from './fetchGCPLogs.js';
 import { fs } from 'zx';
@@ -114,7 +113,7 @@ const fetchLogsByBlockEvents = async ({ network, blockHeight, type }) => {
 
     return logs?.[0] || null;
   } catch (error) {
-    logError(error);
+    console.error(error);
   }
 };
 
@@ -139,14 +138,22 @@ export const fetchAndStoreHeightLogs = async ({
       type: START_BLOCK_EVENT_TYPE,
     });
 
+    if (!foundBeginBlock) {
+      throw Error(
+        `No log entry found for event ${START_BLOCK_EVENT_TYPE} at block height ${blockHeight}`
+      );
+    }
+
     const foundCommitBlockFinish = await fetchLogsByBlockEvents({
       network,
       blockHeight,
       type: COMMIT_BLOCK_FINISH_EVENT_TYPE,
     });
 
-    if (!foundBeginBlock || !foundCommitBlockFinish) {
-      throw Error('Could not find both log entries.');
+    if (!foundCommitBlockFinish) {
+      throw Error(
+        `No log entry found for event ${COMMIT_BLOCK_FINISH_EVENT_TYPE} at block height ${blockHeight}`
+      );
     }
 
     const startTime = foundBeginBlock.timestamp;
