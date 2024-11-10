@@ -7,6 +7,23 @@ import { fs } from 'zx';
 
 const scopes = ['https://www.googleapis.com/auth/logging.read'];
 
+const calculateDaysDifference = (startTimestamp) => {
+  const startTime = new Date(startTimestamp);
+  const currentDate = new Date();
+
+  console.log(`Calculating days difference...`);
+  console.log(`Start Time: ${startTime.toISOString()}`);
+  console.log(`Current Time: ${currentDate.toISOString()}`);
+
+  const timeDifference = currentDate.getTime() - startTime.getTime();
+  console.log(`Time Difference in Milliseconds: ${timeDifference}`);
+
+  const daysDifference = Math.round(timeDifference / (1000 * 60 * 60 * 24));
+  console.log(`Days since START_BLOCK_EVENT_TYPE: ${daysDifference} days`);
+
+  return daysDifference;
+};
+
 const getTimestampsForBatch = (batchStart, batchSize) => {
   const startTime = new Date();
   startTime.setDate(startTime.getDate() - batchStart);
@@ -69,24 +86,22 @@ const fetchLogsForBatch = async ({
   return data.entries || [];
 };
 
-const fetchLogsByBlockEvents = async ({ network, blockHeight, type }) => {
+const fetchLogsByBlockEvents = async ({
+  network,
+  blockHeight,
+  type,
+  maxDays = 90,
+}) => {
   try {
     console.log(`***** Fetching data for event: ${type} *****`);
 
     const accessToken = await getAccessToken(scopes);
 
-    const maxDays = 90;
     const batchSize = 10; // 10 Days
     let promises = [];
 
-    for (let i = 1; i < maxDays; i += batchSize) {
-      let batchStart;
-
-      if (i == 1) {
-        batchStart = batchSize;
-      } else {
-        batchStart = i - 1 + batchSize;
-      }
+    for (let i = 0; i < maxDays; i += batchSize) {
+      let batchStart = i == 0 ? batchSize : i + batchSize;
 
       const { startTime, endTime } = getTimestampsForBatch(
         batchStart,
@@ -144,10 +159,16 @@ export const fetchAndStoreHeightLogs = async ({
       );
     }
 
+    console.log(
+      `Start time of block ${blockHeight}: ${foundBeginBlock.timestamp}`
+    );
+    const maxDays = calculateDaysDifference(foundBeginBlock.timestamp);
+
     const foundCommitBlockFinish = await fetchLogsByBlockEvents({
       network,
       blockHeight,
       type: COMMIT_BLOCK_FINISH_EVENT_TYPE,
+      maxDays,
     });
 
     if (!foundCommitBlockFinish) {
@@ -159,7 +180,6 @@ export const fetchAndStoreHeightLogs = async ({
     const startTime = foundBeginBlock.timestamp;
     const endTime = foundCommitBlockFinish.timestamp;
 
-    console.log(`Start time of block ${blockHeight}: ${startTime}`);
     console.log(`End time of block ${blockHeight}: ${endTime}`);
 
     let allEntries = [];
