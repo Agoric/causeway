@@ -1,6 +1,6 @@
 // @ts-check
-import { serviceAccount, accessToken } from '../helpers/credentials.js';
-
+import { getCredentials } from '../helpers/getGCPCredentials.js';
+import { getAccessToken } from '../helpers/getAccessToken.js';
 const LOG_ENTRIES_ENDPOINT = 'https://logging.googleapis.com/v2/entries:list';
 // eslint-disable-next-line no-unused-vars
 const COMMIT_BLOCK_FINISH_EVENT_TYPE = 'cosmic-swingset-commit-block-finish';
@@ -76,13 +76,19 @@ export const fetchGCPLogs = async ({
   timestamp >= "${startTime}" AND timestamp <= "${endTime}"
     `;
 
+  const credentials = getCredentials();
+
   const body = {
     filter: fullFilter,
     orderBy: 'timestamp asc',
     pageSize,
     pageToken,
-    resourceNames: ['projects/' + serviceAccount.project_id],
+    resourceNames: ['projects/' + credentials.project_id],
   };
+
+  const accessToken = await getAccessToken([
+    'https://www.googleapis.com/auth/logging.read',
+  ]);
 
   const response = await fetch(LOG_ENTRIES_ENDPOINT, {
     body: JSON.stringify(body),

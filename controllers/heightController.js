@@ -1,7 +1,7 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { processAndConvert } from '../services/fileProcessor.js';
-import { fetchGCPLogsForHeight } from '../services/fetchGCPLogsForHeight.js';
+import { fetchAndStoreHeightLogs } from '../services/fetchAndStoreHeightLogs.js';
 import { networks } from '../helpers/constants.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -41,10 +41,8 @@ export const handleHeightLogs = async (req, res) => {
     resource.type="k8s_container"
   `;
 
-  console.log('Fetching data from GCP...');
-  await fetchGCPLogsForHeight({
-    startBlockHeight: height,
-    endBlockHeight: height,
+  await fetchAndStoreHeightLogs({
+    blockHeight: height,
     inputFile,
     network,
     queryfilter,
