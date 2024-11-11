@@ -40,3 +40,39 @@ test('19 max days creates 2 batches, first 10 days and second 9 days', (t) => {
     );
   }
 });
+
+test('21 max days creates 3 batches, first 10 days, second 10 days and third 1 day', (t) => {
+  const maxDays = 21;
+  const expectedDifferences = [10, 10, 1];
+
+  for (let i = 0; i < expectedDifferences.length; i++) {
+    const currentIndex = i * BATCH_SIZE;
+    const { startTime, endTime } = getTimestampsForBatch(currentIndex, maxDays);
+    const daysDifference = getDaysDifference(startTime, endTime);
+    t.is(
+      daysDifference,
+      expectedDifferences[i],
+      `Batch ${i + 1} should have ${
+        expectedDifferences[i]
+      } days, but got ${daysDifference} days`
+    );
+  }
+});
+
+test('7 max days create 1 batch of 7 days', (t) => {
+  const maxDays = 7;
+  const expectedDifferences = [7];
+
+  for (let i = 0; i < expectedDifferences.length; i++) {
+    const currentIndex = i * BATCH_SIZE;
+    const { startTime, endTime } = getTimestampsForBatch(currentIndex, maxDays);
+    const daysDifference = getDaysDifference(startTime, endTime);
+    t.is(
+      daysDifference,
+      expectedDifferences[i],
+      `Batch ${i + 1} should have ${
+        expectedDifferences[i]
+      } days, but got ${daysDifference} days`
+    );
+  }
+});
