@@ -27,6 +27,13 @@
       "tests/**/*.js"
     ]
   },
+  "nodemonConfig": {
+    "ignore": [
+      "uploads/*",
+      "tests/*",
+      "node_modules/*"
+    ]
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",
