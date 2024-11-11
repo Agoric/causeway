@@ -1,12 +1,14 @@
 // @ts-check
-import { getAccessToken } from '../helpers/getAccessToken.js';
 import { networks } from '../helpers/constants.js';
 import { getCredentials } from '../helpers/getGCPCredentials.js';
 import { fetchGCPLogs } from './fetchGCPLogs.js';
-import { getTimestampsForBatch } from '../helpers/utils.js';
+import {
+  findEntryWithTimestamp,
+  getTimestampsForBatch,
+} from '../helpers/utils.js';
+import { Logging } from '@google-cloud/logging';
 import { fs } from 'zx';
 
-const scopes = ['https://www.googleapis.com/auth/logging.read'];
 const BATCH_SIZE = 10; // 10 days
 
 const calculateDaysDifference = (startTimestamp) => {
@@ -27,53 +29,28 @@ const calculateDaysDifference = (startTimestamp) => {
 };
 
 const fetchLogsForBatch = async ({
-  accessToken,
-  projectId,
+  type,
   network,
   blockHeight,
   startTime,
   endTime,
-  type,
 }) => {
-  const filter = `
+  const projectId = getCredentials().project_id;
+  const logging = new Logging({ projectId });
+
+  const queryfilter = `
     resource.labels.container_name="${networks[network].container_name}" AND
     resource.labels.cluster_name="${networks[network].cluster_name}" AND
     resource.labels.namespace_name="${networks[network].namespace_name}" AND
     resource.labels.pod_name="${networks[network].pod_name}" AND
-    resource.type="k8s_container"
-
-      
-    jsonPayload.type="${type}"
-    jsonPayload.blockHeight="${blockHeight}"
-
+    resource.type="k8s_container" AND
+    jsonPayload.type="${type}" AND
+    jsonPayload.blockHeight="${blockHeight}" AND
     timestamp >= "${startTime}" AND timestamp <= "${endTime}"
-    
   `;
 
-  const LOG_ENTRIES_ENDPOINT = 'https://logging.googleapis.com/v2/entries:list';
-
-  const body = {
-    filter,
-    orderBy: 'timestamp asc',
-    resourceNames: ['projects/' + projectId],
-    pageSize: 1,
-  };
-
-  const response = await fetch(LOG_ENTRIES_ENDPOINT, {
-    body: JSON.stringify(body),
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error fetching logs: ${response.statusText}`);
-  }
-
-  const data = await response.json();
-  return data.entries || [];
+  const [entries] = await logging.getEntries({ filter: queryfilter });
+  return entries;
 };
 
 const fetchLogsByBlockEvents = async ({
@@ -85,20 +62,14 @@ const fetchLogsByBlockEvents = async ({
   try {
     console.log(`***** Fetching data for event: ${type} *****`);
 
-    const accessToken = await getAccessToken(scopes);
-
     let promises = [];
 
     for (let i = 0; i < maxDays; i += BATCH_SIZE) {
       const { startTime, endTime } = getTimestampsForBatch(i, maxDays);
       console.log(`Fetching logs for ${startTime} to ${endTime}`);
 
-      const projectId = getCredentials().project_id;
-
       promises.push(
         fetchLogsForBatch({
-          accessToken,
-          projectId,
           network,
           blockHeight,
           startTime,
@@ -108,9 +79,9 @@ const fetchLogsByBlockEvents = async ({
       );
     }
 
-    const logs = await Promise.any(promises);
+    const logs = await Promise.all(promises);
 
-    return logs?.[0] || null;
+    return findEntryWithTimestamp(logs);
   } catch (error) {
     console.error(error);
   }
