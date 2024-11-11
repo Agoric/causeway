@@ -3,6 +3,7 @@ import { getAccessToken } from '../helpers/getAccessToken.js';
 import { networks } from '../helpers/constants.js';
 import { getCredentials } from '../helpers/getGCPCredentials.js';
 import { fetchGCPLogs } from './fetchGCPLogs.js';
+import { getTimestampsForBatch } from '../helpers/utils.js';
 import { fs } from 'zx';
 
 const scopes = ['https://www.googleapis.com/auth/logging.read'];
@@ -25,23 +26,6 @@ const calculateDaysDifference = (startTimestamp) => {
   return daysDifference;
 };
 
-export const getTimestampsForBatch = (currentIndex, maxDays) => {
-  let batchStart = currentIndex == 0 ? BATCH_SIZE : currentIndex + BATCH_SIZE;
-
-  const difference = Math.abs(maxDays - currentIndex);
-  let batchEnd = difference < BATCH_SIZE ? difference : 10;
-
-  const startTime = new Date();
-  startTime.setDate(startTime.getDate() - batchStart);
-
-  const endTime = new Date(startTime);
-  endTime.setDate(startTime.getDate() + batchEnd);
-
-  return {
-    startTime: startTime.toISOString(),
-    endTime: endTime.toISOString(),
-  };
-};
 const fetchLogsForBatch = async ({
   accessToken,
   projectId,

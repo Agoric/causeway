@@ -1,6 +1,6 @@
 // @ts-check
 import test from 'ava';
-import { getTimestampsForBatch } from '../services/fetchAndStoreHeightLogs.js';
+import { getTimestampsForBatch } from '../helpers/utils.js';
 import { getDaysDifference } from '../helpers/utils.js';
 
 const BATCH_SIZE = 10;
