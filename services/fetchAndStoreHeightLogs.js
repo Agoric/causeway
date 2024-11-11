@@ -25,7 +25,7 @@ const calculateDaysDifference = (startTimestamp) => {
   return daysDifference;
 };
 
-const getTimestampsForBatch = (currentIndex, maxDays) => {
+export const getTimestampsForBatch = (currentIndex, maxDays) => {
   let batchStart = currentIndex == 0 ? BATCH_SIZE : currentIndex + BATCH_SIZE;
 
   const difference = Math.abs(maxDays - currentIndex);

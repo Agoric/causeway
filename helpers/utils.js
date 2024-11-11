@@ -33,3 +33,9 @@ export const formatDateString = (dateString) => {
   const date = new Date(dateString);
   return date.toISOString();
 };
+
+export const getDaysDifference = (startDate, endDate) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+};
