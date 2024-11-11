@@ -1,4 +1,4 @@
-name: ESLint Check
+name: Code Quality Check
 
 on:
   push:
@@ -25,3 +25,6 @@ jobs:
 
       - name: Run ESLint
         run: yarn lint
+
+      - name: Run tests
+        run: yarn test

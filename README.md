@@ -1,7 +1,5 @@
 # Causeway
 
-
-
 **Causeway** is a web application designed to transform chain logs into insightful visual representations. It supports both `.json` and `.slog` file formats, enabling users to visualize complex log data through a straightforward web interface.
 
 ## Prior Art

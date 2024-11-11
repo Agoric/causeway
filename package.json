@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
+    "ava": "^6.2.0",
     "eslint": "^9.13.0",
     "globals": "^15.11.0",
     "nodemon": "^3.1.7"
@@ -18,7 +19,20 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
+    "test": "ava",
     "lint": "eslint ."
+  },
+  "ava": {
+    "files": [
+      "tests/**/*.js"
+    ]
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "uploads/*",
+      "tests/*",
+      "node_modules/*"
+    ]
   },
   "keywords": [],
   "author": "",
