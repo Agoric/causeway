@@ -6,6 +6,7 @@ import { fetchGCPLogs } from './fetchGCPLogs.js';
 import { fs } from 'zx';
 
 const scopes = ['https://www.googleapis.com/auth/logging.read'];
+const BATCH_SIZE = 10; // 10 days
 
 const calculateDaysDifference = (startTimestamp) => {
   const startTime = new Date(startTimestamp);
@@ -24,12 +25,17 @@ const calculateDaysDifference = (startTimestamp) => {
   return daysDifference;
 };
 
-const getTimestampsForBatch = (batchStart, batchSize) => {
+const getTimestampsForBatch = (currentIndex, maxDays) => {
+  let batchStart = currentIndex == 0 ? BATCH_SIZE : currentIndex + BATCH_SIZE;
+
+  const difference = Math.abs(maxDays - currentIndex);
+  let batchEnd = difference < BATCH_SIZE ? difference : 10;
+
   const startTime = new Date();
   startTime.setDate(startTime.getDate() - batchStart);
 
   const endTime = new Date(startTime);
-  endTime.setDate(startTime.getDate() + batchSize);
+  endTime.setDate(startTime.getDate() + batchEnd);
 
   return {
     startTime: startTime.toISOString(),
@@ -97,16 +103,10 @@ const fetchLogsByBlockEvents = async ({
 
     const accessToken = await getAccessToken(scopes);
 
-    const batchSize = 10; // 10 Days
     let promises = [];
 
-    for (let i = 0; i < maxDays; i += batchSize) {
-      let batchStart = i == 0 ? batchSize : i + batchSize;
-
-      const { startTime, endTime } = getTimestampsForBatch(
-        batchStart,
-        batchSize
-      );
+    for (let i = 0; i < maxDays; i += BATCH_SIZE) {
+      const { startTime, endTime } = getTimestampsForBatch(i, maxDays);
       console.log(`Fetching logs for ${startTime} to ${endTime}`);
 
       const projectId = getCredentials().project_id;
