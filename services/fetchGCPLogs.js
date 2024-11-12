@@ -1,10 +1,8 @@
 // @ts-check
+import { Logging } from '@google-cloud/logging';
 import { getCredentials } from '../helpers/getGCPCredentials.js';
-import { getAccessToken } from '../helpers/getAccessToken.js';
 import { formatDateString } from '../helpers/utils.js';
-const LOG_ENTRIES_ENDPOINT = 'https://logging.googleapis.com/v2/entries:list';
-// eslint-disable-next-line no-unused-vars
-const COMMIT_BLOCK_FINISH_EVENT_TYPE = 'cosmic-swingset-commit-block-finish';
+
 const ADDITIONAL_FILTERS = `
     (
         jsonPayload.type = "create-vat" OR 
@@ -16,91 +14,34 @@ const ADDITIONAL_FILTERS = `
 `;
 
 /**
- * @typedef {{
-* insertId: string;
-* jsonPayload: {
-*   blockHeight: number;
-*   blockTime: number;
-*   monotime: number;
-*   type: typeof COMMIT_BLOCK_FINISH_EVENT_TYPE;
-* };
-* labels: {
-*   'compute.googleapis.com/resource_name': string;
-*   'k8s-pod/app': string;
-*   'k8s-pod/apps_kubernetes_io/pod-index': string;
-*   'k8s-pod/controller-revision-hash': string;
-*   'k8s-pod/grouplb': string;
-*   'k8s-pod/statefulset_kubernetes_io/pod-name': string;
-* };
-* logName: string;
-* receiveTimestamp: string;
-* resource: {
-*   labels: {
-*     cluster_name: string;
-*     container_name: string;
-*     location: string;
-*     namespace_name: string;
-*     pod_name: string;
-*     project_id: string;
-*   };
-*   type: string;
-* };
-* severity: string;
-* timestamp: string;
-* }} LogEntry
-*
-
-/**
- * Queries log entries within a specified time range and optional filters.
+ * Fetches logs from Google Cloud Platform based on the specified time range and filter criteria.
  *
- * @param {Object} params - The query parameters.
- * @param {string} params.endTime - The end time for the log query in ISO format.
- * @param {string} params.startTime - The start time for the log query in ISO format.
- * @param {string} [params.filter=''] - Optional filter to narrow down log entries.
- * @param {number} [params.pageSize] - Optional number of entries to retrieve per page.
- * @param {string} [params.pageToken] - Optional token for pagination.
- * @param {boolean} [params.isHeight] - Optional boolean param to update query
- * @returns {Promise<{entries: Array<LogEntry>, nextPageToken?: string}>} - A promise that resolves with log entries and an optional token for the next page.
+ * @param {Object} params - The parameters for fetching logs.
+ * @param {string} params.endTime - The end time for the log entries to fetch, in ISO format.
+ * @param {string} params.startTime - The start time for the log entries to fetch, in ISO format.
+ * @param {string} [params.filter=''] - Additional filter string for querying logs. Defaults to an empty string.
+ * @param {number} [params.pageSize] - The maximum number of log entries to return per page, or `undefined` for no specific page size limit.
+ * @returns {Promise<Array>} A promise that resolves to an array of log entries.
  */
 export const fetchGCPLogs = async ({
   endTime,
   startTime,
   filter = '',
   pageSize = undefined,
-  pageToken = undefined,
 }) => {
-  const fullFilter = `
+  const queryfilter = `
   ${filter} AND
   ${ADDITIONAL_FILTERS}
   timestamp >= "${formatDateString(startTime)}" 
   AND timestamp <= "${formatDateString(endTime)}"
     `;
 
-  const credentials = getCredentials();
-
-  const body = {
-    filter: fullFilter,
-    orderBy: 'timestamp asc',
+  const projectId = getCredentials().project_id;
+  const logging = new Logging({ projectId });
+  const entries = await logging.getEntries({
+    filter: queryfilter,
     pageSize,
-    pageToken,
-    resourceNames: ['projects/' + credentials.project_id],
-  };
-
-  const accessToken = await getAccessToken([
-    'https://www.googleapis.com/auth/logging.read',
-  ]);
-
-  const response = await fetch(LOG_ENTRIES_ENDPOINT, {
-    body: JSON.stringify(body),
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    },
-    method: 'POST',
   });
 
-  if (!response.ok)
-    throw Error(`Failed to query logs due to error: ${await response.text()}`);
-
-  return await response.json();
+  return entries;
 };

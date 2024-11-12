@@ -139,19 +139,18 @@ export const fetchAndStoreHeightLogs = async ({
 
     let allEntries = [];
 
-    const { entries } = await fetchGCPLogs({
+    const [entries] = await fetchGCPLogs({
       startTime,
       endTime,
       filter: queryfilter,
-      pageSize: 1000,
     });
 
     console.log('Fetched page size: ' + entries.length);
     allEntries = allEntries.concat(entries);
 
-    const logEntries = allEntries.map((entry) =>
-      JSON.stringify(entry.jsonPayload)
-    );
+    const logEntries = allEntries.map((entry) => {
+      JSON.stringify(entry.data);
+    });
 
     if (!logEntries) {
       throw Error('No Entries found for the given Height');

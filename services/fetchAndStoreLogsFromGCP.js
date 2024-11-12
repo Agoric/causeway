@@ -11,7 +11,7 @@ export const fetchAndStoreLogsFromGCP = async ({
   try {
     let allEntries = [];
 
-    const { entries } = await fetchGCPLogs({
+    const [entries] = await fetchGCPLogs({
       startTime,
       endTime,
       filter: queryfilter,
@@ -25,9 +25,9 @@ export const fetchAndStoreLogsFromGCP = async ({
     console.log('Fetched page size: ' + entries.length);
     allEntries = allEntries.concat(entries);
 
-    const logEntries = allEntries.map((entry) =>
-      JSON.stringify(entry.jsonPayload)
-    );
+    const logEntries = allEntries.map((entry) => {
+      return JSON.stringify(entry.data);
+    });
 
     fs.writeFile(inputFile, logEntries.join('\n'), (err) => {
       if (err) {
