@@ -8,6 +8,7 @@ html {
 .topbar {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
   padding: 20px;
   padding-bottom: 0;
   background-color: #f4f4f4;
@@ -98,4 +99,39 @@ select {
 #dateForm > #fileHelperText > p,
 #blockHeightForm > #fileHelperText > p {
   margin: 0;
+}
+
+@media (max-width: 649px) {
+  .topbar {
+    flex-direction: column;
+    gap: 20px;
+  }
+  .formDateRange,
+  .formBlockHeight {
+    display: block;
+  }
+
+  #inputBlock {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 10px;
+  }
+
+  #uploadForm > #fileHelperText > p {
+    margin: 0;
+  }
+
+  #networkForm {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  #networkForm > #fileHelperText > p {
+    display: none;
+  }
+
+  #blockHeightForm > #fileHelperText > p {
+    padding-bottom: 8px;
+  }
 }

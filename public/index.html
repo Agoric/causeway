@@ -24,9 +24,11 @@
         </form>
 
         <form id="uploadForm" class="formUpload">
-            <input type="file" id="fileInput" name="file" accept=".log,.slog,.json" required>
-            <div id="spinnerFileForm" class="spinner"></div>
-            <button id="uploadFileButton" type="submit">Upload File</button>
+            <div id="inputBlock">
+                <input type="file" id="fileInput" name="file" accept=".log,.slog,.json" required>
+                <div id="spinnerFileForm" class="spinner"></div>
+                <button id="uploadFileButton" type="submit">Upload File</button>
+            </div>
             <div id="fileHelperText">
                 <p id="helperText">Supported: .log, .slog, .json</p>
                 <p id="helperText"> Maximum file size: 50MB.</p>
@@ -34,7 +36,7 @@
         </form>
 
         <form id="dateForm" class="formDateRange">
-            <div>
+            <div id="inputBlock">
                 <input type="datetime-local" id="startDate" name="startDate" required>
                 <div id="spinnerDateForm" class="spinner"></div>
                 <button id="submitDateButton" type="submit">Submit Date</button>
@@ -45,7 +47,7 @@
         </form>
 
         <form id="blockHeightForm" class="formBlockHeight">
-            <div>
+            <div id="inputBlock">
                 <input type="number" id="blockHeight" name="blockHeight" required>
                 <div id="spinnerHeightForm" class="spinner"></div>
                 <button id="submitHeightButton" type="submit">Submit Height</button>

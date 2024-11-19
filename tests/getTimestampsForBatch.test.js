@@ -7,7 +7,6 @@ const BATCH_SIZE = 10;
 
 test('90 days creates 9 batches of 10 days each', (t) => {
   const totalDaysCoverage = 90;
-  let currentBatch = 0;
 
   for (
     let currentIndex = 0;
@@ -29,8 +28,6 @@ test('90 days creates 9 batches of 10 days each', (t) => {
       10,
       `Each batch should be 10 days, but got ${daysDifference} days`
     );
-
-    currentBatch += 1;
   }
 });
 
