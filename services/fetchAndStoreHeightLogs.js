@@ -57,15 +57,22 @@ const fetchLogsByBlockEvents = async ({
   network,
   blockHeight,
   type,
-  maxDays = 90,
+  totalDaysCoverage = 90,
 }) => {
   try {
     console.log(`***** Fetching data for event: ${type} *****`);
 
     let promises = [];
 
-    for (let i = 0; i < maxDays; i += BATCH_SIZE) {
-      const { startTime, endTime } = getTimestampsForBatch(i, maxDays);
+    for (
+      let batchStartIndex = 0;
+      batchStartIndex < totalDaysCoverage;
+      batchStartIndex += BATCH_SIZE
+    ) {
+      const { startTime, endTime } = getTimestampsForBatch(
+        batchStartIndex,
+        totalDaysCoverage
+      );
       console.log(`Fetching logs for ${startTime} to ${endTime}`);
 
       promises.push(
@@ -117,13 +124,15 @@ export const fetchAndStoreHeightLogs = async ({
     console.log(
       `Start time of block ${blockHeight}: ${foundBeginBlock.timestamp}`
     );
-    const maxDays = calculateDaysDifference(foundBeginBlock.timestamp);
+    const totalDaysCoverage = calculateDaysDifference(
+      foundBeginBlock.timestamp
+    );
 
     const foundCommitBlockFinish = await fetchLogsByBlockEvents({
       network,
       blockHeight,
       type: COMMIT_BLOCK_FINISH_EVENT_TYPE,
-      maxDays,
+      totalDaysCoverage,
     });
 
     if (!foundCommitBlockFinish) {

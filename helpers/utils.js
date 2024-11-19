@@ -40,30 +40,30 @@ export const getDaysDifference = (startDate, endDate) => {
   return (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
 };
 
-export const getTimestampsForBatch = (currentIndex, maxDays) => {
+export const getTimestampsForBatch = (batchStartIndex, totalDaysCoverage) => {
   const BATCH_SIZE = 10; // 10 days
-  const difference = Math.abs(maxDays - currentIndex);
+  const difference = Math.abs(totalDaysCoverage - batchStartIndex);
 
   /**
-   * batchStart: Determines the starting point for the current batch in days.
+   * batchStart: Determines the starting offset for the current batch in days.
    * - If the remaining days (`difference`) are less than `BATCH_SIZE`, the batch starts
-   *   at `difference + currentIndex` to adjust for the smaller range.
-   * - Otherwise, the batch starts at `currentIndex + BATCH_SIZE`, progressing by batch size.
+   *   at `difference + batchStartIndex` to adjust for the smaller range.
+   * - Otherwise, the batch starts at `batchStartIndex + BATCH_SIZE`, progressing by batch size.
    * Example:
-   * If `currentIndex = 0` and `maxDays = 25`:
+   * If `batchStartIndex = 0` and `totalDaysCoverage = 25`:
    *   - `difference = 25`
    *   - `batchStart = 10` (since `difference >= BATCH_SIZE`)
    *   - `batchEnd = 10` (maximum batch size)
    *
-   * If `currentIndex = 20` and `maxDays = 25`:
+   * If `batchStartIndex = 20` and `totalDaysCoverage = 25`:
    *   - `difference = 5`
-   *   - `batchStart = 25` (`difference + currentIndex` since `difference < BATCH_SIZE`)
+   *   - `batchStart = 25` (`difference + batchStartIndex` since `difference < BATCH_SIZE`)
    *   - `batchEnd = 5` (remaining days less than batch size)
    */
   const batchStart =
     difference < BATCH_SIZE
-      ? difference + currentIndex
-      : currentIndex + BATCH_SIZE;
+      ? difference + batchStartIndex
+      : batchStartIndex + BATCH_SIZE;
 
   const batchEnd = Math.min(difference, BATCH_SIZE);
 
@@ -87,7 +87,7 @@ export const getTimestampsForBatch = (currentIndex, maxDays) => {
   and may lead to fetching duplicate or inconsistent data.
   */
   startTime.setHours(0, 0, 0, 0);
-  if (currentIndex !== 0) {
+  if (batchStartIndex !== 0) {
     endTime.setHours(0, 0, 0, 0);
   }
 
