@@ -44,9 +44,25 @@ export const getTimestampsForBatch = (currentIndex, maxDays) => {
   const BATCH_SIZE = 10; // 10 days
   const difference = Math.abs(maxDays - currentIndex);
 
+  /**
+   * batchStart: Determines the starting point for the current batch in days.
+   * - If the remaining days (`difference`) are less than `BATCH_SIZE`, the batch starts
+   *   at `difference + currentIndex` to adjust for the smaller range.
+   * - Otherwise, the batch starts at `currentIndex + BATCH_SIZE`, progressing by batch size.
+   * Example:
+   * If `currentIndex = 0` and `maxDays = 25`:
+   *   - `difference = 25`
+   *   - `batchStart = 10` (since `difference >= BATCH_SIZE`)
+   *   - `batchEnd = 10` (maximum batch size)
+   *
+   * If `currentIndex = 20` and `maxDays = 25`:
+   *   - `difference = 5`
+   *   - `batchStart = 25` (`difference + currentIndex` since `difference < BATCH_SIZE`)
+   *   - `batchEnd = 5` (remaining days less than batch size)
+   */
   const batchStart =
     difference < BATCH_SIZE
-      ? difference + currentIndex + 1
+      ? difference + currentIndex
       : currentIndex + BATCH_SIZE;
 
   const batchEnd = Math.min(difference, BATCH_SIZE);
