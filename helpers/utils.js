@@ -42,9 +42,20 @@ export const getDaysDifference = (startDate, endDate) => {
 
 export const getTimestampsForBatch = (currentIndex, maxDays) => {
   const BATCH_SIZE = 10; // 10 days
-  let batchStart = currentIndex == 0 ? BATCH_SIZE : currentIndex + BATCH_SIZE;
-
   const difference = Math.abs(maxDays - currentIndex);
+
+  let batchStart;
+
+  if (difference < BATCH_SIZE) {
+    batchStart = difference + currentIndex + 1;
+  } else {
+    if (currentIndex === 0) {
+      batchStart = BATCH_SIZE;
+    } else {
+      batchStart = currentIndex + BATCH_SIZE;
+    }
+  }
+
   let batchEnd = difference < BATCH_SIZE ? difference : 10;
 
   const startTime = new Date();
@@ -57,4 +68,15 @@ export const getTimestampsForBatch = (currentIndex, maxDays) => {
     startTime: startTime.toISOString(),
     endTime: endTime.toISOString(),
   };
+};
+
+export const findEntryWithTimestamp = (logs) => {
+  for (const logEntries of logs) {
+    for (const entry of logEntries) {
+      if (entry.metadata && entry.metadata.timestamp) {
+        return entry.metadata;
+      }
+    }
+  }
+  return null;
 };

@@ -1,6 +1,7 @@
 // @ts-check
 import { getCredentials } from '../helpers/getGCPCredentials.js';
 import { getAccessToken } from '../helpers/getAccessToken.js';
+import { formatDateString } from '../helpers/utils.js';
 const LOG_ENTRIES_ENDPOINT = 'https://logging.googleapis.com/v2/entries:list';
 // eslint-disable-next-line no-unused-vars
 const COMMIT_BLOCK_FINISH_EVENT_TYPE = 'cosmic-swingset-commit-block-finish';
@@ -67,13 +68,12 @@ export const fetchGCPLogs = async ({
   filter = '',
   pageSize = undefined,
   pageToken = undefined,
-  isHeight = false,
 }) => {
-  const additionalQueryFilter = isHeight ? '' : `${ADDITIONAL_FILTERS} AND`;
   const fullFilter = `
   ${filter} AND
-  ${additionalQueryFilter}
-  timestamp >= "${startTime}" AND timestamp <= "${endTime}"
+  ${ADDITIONAL_FILTERS}
+  timestamp >= "${formatDateString(startTime)}" 
+  AND timestamp <= "${formatDateString(endTime)}"
     `;
 
   const credentials = getCredentials();
