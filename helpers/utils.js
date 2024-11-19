@@ -44,25 +44,36 @@ export const getTimestampsForBatch = (currentIndex, maxDays) => {
   const BATCH_SIZE = 10; // 10 days
   const difference = Math.abs(maxDays - currentIndex);
 
-  let batchStart;
+  const batchStart =
+    difference < BATCH_SIZE
+      ? difference + currentIndex + 1
+      : currentIndex + BATCH_SIZE;
 
-  if (difference < BATCH_SIZE) {
-    batchStart = difference + currentIndex + 1;
-  } else {
-    if (currentIndex === 0) {
-      batchStart = BATCH_SIZE;
-    } else {
-      batchStart = currentIndex + BATCH_SIZE;
-    }
-  }
-
-  let batchEnd = difference < BATCH_SIZE ? difference : 10;
+  const batchEnd = Math.min(difference, BATCH_SIZE);
 
   const startTime = new Date();
   startTime.setDate(startTime.getDate() - batchStart);
 
   const endTime = new Date(startTime);
   endTime.setDate(startTime.getDate() + batchEnd);
+
+  /** 
+  This is done to ensure that the intervals do not overlap. Without setting the time to
+  the start of the day (00:00:00.000), the intervals may include the current time of day,
+  causing inconsistencies in log-fetching ranges.
+  
+  Example of overlapping intervals without resetting the time:
+    Interval 1: 2024-11-09T03:59:08.803Z to 2024-11-19T03:59:08.803Z
+    Interval 2: 2024-10-30T03:59:08.865Z to 2024-11-09T03:59:08.865Z
+
+  Notice that the end of Interval 2 (2024-11-09T03:59:08.865Z) is greater than the
+  start of Interval 1 (2024-11-09T03:59:08.803Z). This results in overlapping logs
+  and may lead to fetching duplicate or inconsistent data.
+  */
+  startTime.setHours(0, 0, 0, 0);
+  if (currentIndex !== 0) {
+    endTime.setHours(0, 0, 0, 0);
+  }
 
   return {
     startTime: startTime.toISOString(),
