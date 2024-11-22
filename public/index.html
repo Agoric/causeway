@@ -46,16 +46,36 @@
             </div>
         </form>
 
-        <form id="blockHeightForm" class="formBlockHeight">
-            <div id="inputBlock">
-                <input type="number" id="blockHeight" name="blockHeight" required>
-                <div id="spinnerHeightForm" class="spinner"></div>
-                <button id="submitHeightButton" type="submit">Submit Height</button>
+        <form id="searchForm">
+            <div id="searchFormTop">
+                <select id="searchType" name="searchType">
+                    <option value="blockHeight">Block Height</option>
+                    <option value="txHash">Transaction Hash</option>
+                    <option value="searchTerm">Search Term</option>
+                </select>
             </div>
-            <div id="fileHelperText">
-                <p id="helperText">Enter a Block Height</p>
+
+            <div id="searchFormBottom">
+                <div id="blockHeightInput">
+                    <input class="searchInput" type="number" id="blockHeight" name="blockHeight">
+                    <div class="spinner"></div>
+                </div>
+
+                <div id="txHashInput">
+                    <input class="searchInput" type="text" id="txHash" name="txHash">
+                </div>
+
+                <div id="searchTermInput">
+                    <input class="searchInput" type="text" id="searchTerm" name="searchTerm">
+                </div>
+
+                <div id="spinnerSearchForm" class="spinner"></div>
+                <button id="submitSearchButton" type="submit">Search</button>
             </div>
         </form>
+
+
+
 
     </div>
 
@@ -64,10 +84,7 @@
     </div>
 
     <script src="/scripts/ses/ses.umd.min.js" charset="utf-8"></script>
-    <script src="./scripts/lockdown.js"></script>
-    <script src="scripts/upload.js"></script>
-    <script src="scripts/submitDateRange.js"></script>
-    <script src="scripts/submitHeight.js"></script>
+    <script type="module" src="./scripts/index.js"></script>
 
 </body>
 

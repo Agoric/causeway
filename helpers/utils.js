@@ -37,6 +37,19 @@ export const formatDateString = (dateString) => {
   return date.toISOString();
 };
 
+export const getTimeStamps = () => {
+  const endDate = new Date();
+
+  // Get the date 10 days before today
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - 10);
+
+  return {
+    startTime: startDate.toISOString(),
+    endTime: endDate.toISOString(),
+  };
+};
+
 export const getDaysDifference = (startDate, endDate) => {
   const start = new Date(startDate);
   const end = new Date(endDate);
