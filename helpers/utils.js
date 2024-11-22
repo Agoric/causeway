@@ -111,8 +111,7 @@ export const findEntryWithTimestamp = (logs) => {
   return null;
 };
 
-export const fetchLogsForBatch = async ({
-  type,
+export const fetchLogs = async ({
   network,
   searchQuery,
   startTime,
@@ -127,11 +126,65 @@ export const fetchLogsForBatch = async ({
     resource.labels.namespace_name="${networks[network].namespace_name}" AND
     resource.labels.pod_name="${networks[network].pod_name}" AND
     resource.type="k8s_container" AND
-    jsonPayload.type="${type}" AND
     ${searchQuery} AND
     timestamp >= "${startTime}" AND timestamp <= "${endTime}"
   `;
 
   const [entries] = await logging.getEntries({ filter: queryfilter });
   return entries;
+};
+
+export const calculateDaysDifference = (startTimestamp) => {
+  const startTime = new Date(startTimestamp);
+  const currentDate = new Date();
+
+  console.log(`Calculating days difference...`);
+  console.log(`Start Time: ${startTime.toISOString()}`);
+  console.log(`Current Time: ${currentDate.toISOString()}`);
+
+  const timeDifference = currentDate.getTime() - startTime.getTime();
+  console.log(`Time Difference in Milliseconds: ${timeDifference}`);
+
+  const daysDifference = Math.round(timeDifference / (1000 * 60 * 60 * 24));
+  console.log(`Days since START_BLOCK_EVENT_TYPE: ${daysDifference} days`);
+
+  return daysDifference;
+};
+
+export const fetchLogsInBatches = async ({
+  network,
+  searchQuery,
+  batchSize = 10,
+  totalDaysCoverage = 90,
+}) => {
+  try {
+    let promises = [];
+
+    for (
+      let batchStartIndex = 0;
+      batchStartIndex < totalDaysCoverage;
+      batchStartIndex += batchSize
+    ) {
+      const { startTime, endTime } = getTimestampsForBatch(
+        batchStartIndex,
+        totalDaysCoverage
+      );
+      console.log(`Fetching logs for ${startTime} to ${endTime}`);
+
+      promises.push(
+        fetchLogs({
+          network,
+          searchQuery,
+          startTime,
+          endTime,
+        })
+      );
+    }
+
+    const logs = await Promise.all(promises);
+
+    return logs;
+  } catch (error) {
+    console.error(error);
+  }
 };

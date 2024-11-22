@@ -1,30 +1,11 @@
 // @ts-check
 import { fetchGCPLogs } from './fetchGCPLogs.js';
 import {
-  fetchLogsForBatch,
   findEntryWithTimestamp,
-  getTimestampsForBatch,
+  calculateDaysDifference,
+  fetchLogsInBatches,
 } from '../helpers/utils.js';
 import { fs } from 'zx';
-
-const BATCH_SIZE = 10; // 10 days
-
-const calculateDaysDifference = (startTimestamp) => {
-  const startTime = new Date(startTimestamp);
-  const currentDate = new Date();
-
-  console.log(`Calculating days difference...`);
-  console.log(`Start Time: ${startTime.toISOString()}`);
-  console.log(`Current Time: ${currentDate.toISOString()}`);
-
-  const timeDifference = currentDate.getTime() - startTime.getTime();
-  console.log(`Time Difference in Milliseconds: ${timeDifference}`);
-
-  const daysDifference = Math.round(timeDifference / (1000 * 60 * 60 * 24));
-  console.log(`Days since START_BLOCK_EVENT_TYPE: ${daysDifference} days`);
-
-  return daysDifference;
-};
 
 const fetchLogsByBlockEvents = async ({
   network,
@@ -35,33 +16,16 @@ const fetchLogsByBlockEvents = async ({
   try {
     console.log(`***** Fetching data for event: ${type} *****`);
 
-    let promises = [];
+    const searchQuery = `
+    jsonPayload.type="${type}" AND
+    jsonPayload.blockHeight="${blockHeight}"`;
 
-    for (
-      let batchStartIndex = 0;
-      batchStartIndex < totalDaysCoverage;
-      batchStartIndex += BATCH_SIZE
-    ) {
-      const { startTime, endTime } = getTimestampsForBatch(
-        batchStartIndex,
-        totalDaysCoverage
-      );
-      console.log(`Fetching logs for ${startTime} to ${endTime}`);
-
-      const searchQuery = `jsonPayload.blockHeight="${blockHeight}"`;
-
-      promises.push(
-        fetchLogsForBatch({
-          network,
-          searchQuery,
-          startTime,
-          endTime,
-          type,
-        })
-      );
-    }
-
-    const logs = await Promise.all(promises);
+    const logs = await fetchLogsInBatches({
+      network,
+      searchQuery,
+      batchSize: 10,
+      totalDaysCoverage,
+    });
 
     return findEntryWithTimestamp(logs);
   } catch (error) {
