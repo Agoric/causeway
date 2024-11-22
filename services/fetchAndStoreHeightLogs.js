@@ -1,11 +1,12 @@
 // @ts-check
-import { fetchGCPLogs } from './fetchGCPLogs.js';
 import {
   findEntryWithTimestamp,
   calculateDaysDifference,
   fetchLogsInBatches,
+  fetchLogs,
 } from '../helpers/utils.js';
 import { fs } from 'zx';
+import { ADDITIONAL_QUERY_FILTERS } from '../helpers/constants.js';
 
 const fetchLogsByBlockEvents = async ({
   network,
@@ -36,7 +37,6 @@ const fetchLogsByBlockEvents = async ({
 export const fetchAndStoreHeightLogs = async ({
   blockHeight,
   inputFile,
-  queryfilter = '',
   network,
 }) => {
   try {
@@ -87,19 +87,23 @@ export const fetchAndStoreHeightLogs = async ({
 
     let allEntries = [];
 
-    const { entries } = await fetchGCPLogs({
+    const searchQuery = `
+    ${ADDITIONAL_QUERY_FILTERS}  
+    `;
+
+    const entries = await fetchLogs({
       startTime,
       endTime,
-      filter: queryfilter,
-      pageSize: 1000,
+      searchQuery,
+      network,
     });
 
     console.log('Fetched page size: ' + entries.length);
     allEntries = allEntries.concat(entries);
 
-    const logEntries = allEntries.map((entry) =>
-      JSON.stringify(entry.jsonPayload)
-    );
+    const logEntries = allEntries.map((entry) => {
+      return JSON.stringify(entry.data);
+    });
 
     if (!logEntries) {
       throw Error('No Entries found for the given Height');
