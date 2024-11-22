@@ -1,5 +1,8 @@
 // @ts-check
 import { fs } from 'zx';
+import { getCredentials } from './getGCPCredentials.js';
+import { Logging } from '@google-cloud/logging';
+import { networks } from './constants.js';
 
 export const checkFileExists = async ({ filePath, description = 'File' }) => {
   try {
@@ -106,4 +109,29 @@ export const findEntryWithTimestamp = (logs) => {
     }
   }
   return null;
+};
+
+export const fetchLogsForBatch = async ({
+  type,
+  network,
+  searchQuery,
+  startTime,
+  endTime,
+}) => {
+  const projectId = getCredentials().project_id;
+  const logging = new Logging({ projectId });
+
+  const queryfilter = `
+    resource.labels.container_name="${networks[network].container_name}" AND
+    resource.labels.cluster_name="${networks[network].cluster_name}" AND
+    resource.labels.namespace_name="${networks[network].namespace_name}" AND
+    resource.labels.pod_name="${networks[network].pod_name}" AND
+    resource.type="k8s_container" AND
+    jsonPayload.type="${type}" AND
+    ${searchQuery} AND
+    timestamp >= "${startTime}" AND timestamp <= "${endTime}"
+  `;
+
+  const [entries] = await logging.getEntries({ filter: queryfilter });
+  return entries;
 };
