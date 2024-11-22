@@ -15,27 +15,40 @@ searchTypeSelect.addEventListener('change', () => {
   }
 });
 
+const validStrategies = new Set(['blockHeight', 'txHash', 'searchTerm']);
+
+const isValidStrategy = (strategy) => {
+  if (!validStrategies.has(strategy)) {
+    return false;
+  }
+  return true;
+};
+
 document.getElementById('searchForm').addEventListener('submit', async (e) => {
   e.preventDefault();
 
-  const searchInputValue = document.querySelector('.searchInput').value;
-  const searchStrategy = document.getElementById('searchType').value;
+  const search = document.querySelector('.searchInput').value;
+  const strategy = document.getElementById('searchType').value;
   const spinner = document.getElementById('spinnerSearchForm');
-  const submitButton = document.getElementById('submitSearch');
+  const submitButton = document.getElementById('submitSearchButton');
   const network = document.getElementById('networkSelect').value;
 
   spinner.style.display = 'inline-block';
   submitButton.style.visibility = 'hidden';
   try {
+    if (!isValidStrategy(strategy)) {
+      throw new Error(`Invalid strategy selected: ${strategy}`);
+    }
+
     const response = await fetch('/submit-height', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        searchInputValue,
+        search,
         network,
-        strategy: searchStrategy,
+        strategy,
       }),
     });
 
@@ -47,7 +60,8 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
       svgElement.src = url;
       svgElement.style.display = 'inline-block';
     } else {
-      console.error('Failed to upload file');
+      let parsedResponse = await response.json();
+      console.error('Failed to upload file:', parsedResponse.message);
     }
   } catch (error) {
     console.error('Error:', error);

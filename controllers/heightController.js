@@ -1,3 +1,4 @@
+// @ts-check
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { processAndConvert } from '../services/fileProcessor.js';
@@ -9,16 +10,29 @@ const __dirname = path.dirname(__filename);
 
 const uploadDir = 'uploads';
 
+const validStrategies = new Set(['blockHeight', 'txHash', 'searchTerm']);
+const isValidStrategy = (strategy) => {
+  return validStrategies.has(strategy);
+};
+
 export const handleHeightLogs = async (req, res) => {
-  const { height, network } = req.body;
-  if (!height) {
-    return res.status(400).json({ message: 'Height is required.' });
-  }
-  if (!network || !networks[network]) {
-    return res.status(400).json({ error: 'Bad Request: Network not found' });
+  const { search, network, strategy } = req.body;
+  console.log(req.body);
+
+  if (!isValidStrategy(strategy)) {
+    return res.status(400).json({
+      message: 'Invalid strategy selected',
+    });
   }
 
-  console.log(`height:${height} AND AGORIC_NET:${network}`);
+  if (!search) {
+    return res.status(400).json({ message: 'Search input is required.' });
+  }
+  if (!network || !networks[network]) {
+    return res.status(400).json({ message: 'Bad Request: Network not found' });
+  }
+
+  console.log(`SearchInput:${search} AND AGORIC_NET:${network}`);
 
   const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
   const inputFile = path.join(
@@ -42,7 +56,7 @@ export const handleHeightLogs = async (req, res) => {
   `;
 
   await fetchAndStoreHeightLogs({
-    blockHeight: height,
+    blockHeight: search,
     inputFile,
     network,
     queryfilter,
