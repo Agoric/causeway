@@ -48,41 +48,33 @@ export const fetchAndStoreHeightLogs = async ({
     const COMMIT_BLOCK_FINISH_EVENT_TYPE =
       'cosmic-swingset-commit-block-finish';
 
-    const foundBeginBlock = await fetchLogsByBlockEvents({
-      network,
-      blockHeight,
-      type: START_BLOCK_EVENT_TYPE,
-    });
+    const [foundBeginBlock, foundCommitBlockFinish] = await Promise.all([
+      fetchLogsByBlockEvents({
+        network,
+        blockHeight,
+        type: START_BLOCK_EVENT_TYPE,
+      }),
+      fetchLogsByBlockEvents({
+        network,
+        blockHeight,
+        type: COMMIT_BLOCK_FINISH_EVENT_TYPE,
+      }),
+    ]);
 
-    if (!foundBeginBlock) {
+    if (!foundBeginBlock || !foundCommitBlockFinish) {
+      const missingEventType = !foundBeginBlock
+        ? START_BLOCK_EVENT_TYPE
+        : COMMIT_BLOCK_FINISH_EVENT_TYPE;
+
       throw Error(
-        `No log entry found for event ${START_BLOCK_EVENT_TYPE} at block height ${blockHeight}`
-      );
-    }
-
-    console.log(
-      `Start time of block ${blockHeight}: ${foundBeginBlock.timestamp}`
-    );
-    const totalDaysCoverage = calculateDaysDifference(
-      foundBeginBlock.timestamp
-    );
-
-    const foundCommitBlockFinish = await fetchLogsByBlockEvents({
-      network,
-      blockHeight,
-      type: COMMIT_BLOCK_FINISH_EVENT_TYPE,
-      totalDaysCoverage,
-    });
-
-    if (!foundCommitBlockFinish) {
-      throw Error(
-        `No log entry found for event ${COMMIT_BLOCK_FINISH_EVENT_TYPE} at block height ${blockHeight}`
+        `No log entry found for event ${missingEventType} at block height ${blockHeight}`
       );
     }
 
     const startTime = foundBeginBlock.timestamp;
     const endTime = foundCommitBlockFinish.timestamp;
 
+    console.log(`Start time of block ${blockHeight}: ${startTime}`);
     console.log(`End time of block ${blockHeight}: ${endTime}`);
 
     let allEntries = [];
