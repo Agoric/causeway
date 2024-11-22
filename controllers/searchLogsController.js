@@ -4,15 +4,17 @@ import { fileURLToPath } from 'url';
 import { processAndConvert } from '../services/fileProcessor.js';
 import { fetchAndStoreHeightLogs } from '../services/fetchAndStoreHeightLogs.js';
 import { networks } from '../helpers/constants.js';
+import { fetchAndStoreLogsFromGCP } from '../services/fetchAndStoreLogsFromGCP.js';
+import { getTimeStamps } from '../helpers/utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const uploadDir = 'uploads';
 
-const validStrategies = new Set(['blockHeight', 'txHash', 'searchTerm']);
+const strategies = ['blockHeight', 'txHash', 'searchTerm'];
 const isValidStrategy = (strategy) => {
-  return validStrategies.has(strategy);
+  return strategies.includes(strategy);
 };
 
 export const handleSearchLogs = async (req, res) => {
@@ -47,19 +49,37 @@ export const handleSearchLogs = async (req, res) => {
   console.log(`Namespace Name: ${networks[network].namespace_name}`);
   console.log(`Pod Name: ${networks[network].pod_name}`);
 
-  const queryfilter = `
-    resource.labels.container_name="${networks[network].container_name}" AND
-    resource.labels.cluster_name="${networks[network].cluster_name}" AND
-    resource.labels.namespace_name="${networks[network].namespace_name}" AND
-    resource.labels.pod_name="${networks[network].pod_name}" AND
-    resource.type="k8s_container"
-  `;
+  if (strategy === strategies[0]) {
+    await fetchAndStoreHeightLogs({
+      blockHeight: search,
+      inputFile,
+      network,
+    });
+  } else if (strategy === strategies[1]) {
+    const { startTime, endTime } = getTimeStamps();
+    const queryfilter = `
+    jsonPayload.txHash="${search}" AND`;
 
-  await fetchAndStoreHeightLogs({
-    blockHeight: search,
-    inputFile,
-    network,
-    queryfilter,
-  });
+    await fetchAndStoreLogsFromGCP({
+      startTime,
+      endTime,
+      inputFile,
+      network,
+      queryfilter,
+    });
+  } else if (strategy === strategies[2]) {
+    const { startTime, endTime } = getTimeStamps();
+    const queryfilter = `
+    jsonPayload.txHash="${search}" AND`;
+
+    await fetchAndStoreLogsFromGCP({
+      startTime,
+      endTime,
+      inputFile,
+      network,
+      queryfilter,
+    });
+  }
+
   await processAndConvert({ inputFile, res });
 };
