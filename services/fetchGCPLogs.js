@@ -2,18 +2,11 @@
 import { getCredentials } from '../helpers/getGCPCredentials.js';
 import { getAccessToken } from '../helpers/getAccessToken.js';
 import { formatDateString } from '../helpers/utils.js';
+import { ADDITIONAL_QUERY_FILTERS } from '../helpers/constants.js';
+
 const LOG_ENTRIES_ENDPOINT = 'https://logging.googleapis.com/v2/entries:list';
 // eslint-disable-next-line no-unused-vars
 const COMMIT_BLOCK_FINISH_EVENT_TYPE = 'cosmic-swingset-commit-block-finish';
-const ADDITIONAL_FILTERS = `
-    (
-        jsonPayload.type = "create-vat" OR 
-        jsonPayload.type = "cosmic-swingset-end-block-start" OR 
-        jsonPayload.type = "deliver" OR 
-        jsonPayload.type = "deliver-result" OR 
-        jsonPayload.type = "syscall"
-    )
-`;
 
 /**
  * @typedef {{
@@ -71,7 +64,7 @@ export const fetchGCPLogs = async ({
 }) => {
   const fullFilter = `
   ${filter} AND
-  ${ADDITIONAL_FILTERS}
+  ${ADDITIONAL_QUERY_FILTERS}
   timestamp >= "${formatDateString(startTime)}" 
   AND timestamp <= "${formatDateString(endTime)}"
     `;
