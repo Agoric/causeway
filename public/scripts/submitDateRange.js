@@ -9,7 +9,7 @@ document.getElementById('dateForm').addEventListener('submit', async (e) => {
   spinner.style.display = 'inline-block';
   submitButton.style.visibility = 'hidden';
   try {
-    const response = await fetch('/submit-date-range', {
+    const response = await fetch('/search-logs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

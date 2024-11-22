@@ -40,7 +40,7 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
       throw new Error(`Invalid strategy selected: ${strategy}`);
     }
 
-    const response = await fetch('/submit-height', {
+    const response = await fetch('/search-logs', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -15,7 +15,7 @@ const isValidStrategy = (strategy) => {
   return validStrategies.has(strategy);
 };
 
-export const handleHeightLogs = async (req, res) => {
+export const handleSearchLogs = async (req, res) => {
   const { search, network, strategy } = req.body;
   console.log(req.body);
 
