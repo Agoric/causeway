@@ -1,21 +1,28 @@
 // @ts-check
 import { fs } from 'zx';
-import { fetchGCPLogs } from './fetchGCPLogs.js';
+import { fetchLogs } from '../helpers/utils.js';
+import { ADDITIONAL_QUERY_FILTERS } from '../helpers/constants.js';
 
 export const fetchAndStoreLogsFromGCP = async ({
   startTime,
   endTime,
   inputFile,
+  network,
   queryfilter = '',
 }) => {
   try {
     let allEntries = [];
 
-    const { entries } = await fetchGCPLogs({
+    const searchQuery = `
+      ${queryfilter}
+      ${ADDITIONAL_QUERY_FILTERS}
+    `;
+
+    const entries = await fetchLogs({
       startTime,
       endTime,
-      filter: queryfilter,
-      pageSize: 1000,
+      searchQuery,
+      network,
     });
 
     if (!entries) {
@@ -25,9 +32,9 @@ export const fetchAndStoreLogsFromGCP = async ({
     console.log('Fetched page size: ' + entries.length);
     allEntries = allEntries.concat(entries);
 
-    const logEntries = allEntries.map((entry) =>
-      JSON.stringify(entry.jsonPayload)
-    );
+    const logEntries = allEntries.map((entry) => {
+      return JSON.stringify(entry.data);
+    });
 
     fs.writeFile(inputFile, logEntries.join('\n'), (err) => {
       if (err) {

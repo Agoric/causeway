@@ -1,57 +1,12 @@
 // @ts-check
-import { networks } from '../helpers/constants.js';
-import { getCredentials } from '../helpers/getGCPCredentials.js';
-import { fetchGCPLogs } from './fetchGCPLogs.js';
 import {
   findEntryWithTimestamp,
-  getTimestampsForBatch,
+  calculateDaysDifference,
+  fetchLogsInBatches,
+  fetchLogs,
 } from '../helpers/utils.js';
-import { Logging } from '@google-cloud/logging';
 import { fs } from 'zx';
-
-const BATCH_SIZE = 10; // 10 days
-
-const calculateDaysDifference = (startTimestamp) => {
-  const startTime = new Date(startTimestamp);
-  const currentDate = new Date();
-
-  console.log(`Calculating days difference...`);
-  console.log(`Start Time: ${startTime.toISOString()}`);
-  console.log(`Current Time: ${currentDate.toISOString()}`);
-
-  const timeDifference = currentDate.getTime() - startTime.getTime();
-  console.log(`Time Difference in Milliseconds: ${timeDifference}`);
-
-  const daysDifference = Math.round(timeDifference / (1000 * 60 * 60 * 24));
-  console.log(`Days since START_BLOCK_EVENT_TYPE: ${daysDifference} days`);
-
-  return daysDifference;
-};
-
-const fetchLogsForBatch = async ({
-  type,
-  network,
-  blockHeight,
-  startTime,
-  endTime,
-}) => {
-  const projectId = getCredentials().project_id;
-  const logging = new Logging({ projectId });
-
-  const queryfilter = `
-    resource.labels.container_name="${networks[network].container_name}" AND
-    resource.labels.cluster_name="${networks[network].cluster_name}" AND
-    resource.labels.namespace_name="${networks[network].namespace_name}" AND
-    resource.labels.pod_name="${networks[network].pod_name}" AND
-    resource.type="k8s_container" AND
-    jsonPayload.type="${type}" AND
-    jsonPayload.blockHeight="${blockHeight}" AND
-    timestamp >= "${startTime}" AND timestamp <= "${endTime}"
-  `;
-
-  const [entries] = await logging.getEntries({ filter: queryfilter });
-  return entries;
-};
+import { ADDITIONAL_QUERY_FILTERS } from '../helpers/constants.js';
 
 const fetchLogsByBlockEvents = async ({
   network,
@@ -62,31 +17,16 @@ const fetchLogsByBlockEvents = async ({
   try {
     console.log(`***** Fetching data for event: ${type} *****`);
 
-    let promises = [];
+    const searchQuery = `
+    jsonPayload.type="${type}" AND
+    jsonPayload.blockHeight="${blockHeight}"`;
 
-    for (
-      let batchStartIndex = 0;
-      batchStartIndex < totalDaysCoverage;
-      batchStartIndex += BATCH_SIZE
-    ) {
-      const { startTime, endTime } = getTimestampsForBatch(
-        batchStartIndex,
-        totalDaysCoverage
-      );
-      console.log(`Fetching logs for ${startTime} to ${endTime}`);
-
-      promises.push(
-        fetchLogsForBatch({
-          network,
-          blockHeight,
-          startTime,
-          endTime,
-          type,
-        })
-      );
-    }
-
-    const logs = await Promise.all(promises);
+    const logs = await fetchLogsInBatches({
+      network,
+      searchQuery,
+      batchSize: 10,
+      totalDaysCoverage,
+    });
 
     return findEntryWithTimestamp(logs);
   } catch (error) {
@@ -97,7 +37,6 @@ const fetchLogsByBlockEvents = async ({
 export const fetchAndStoreHeightLogs = async ({
   blockHeight,
   inputFile,
-  queryfilter = '',
   network,
 }) => {
   try {
@@ -148,19 +87,23 @@ export const fetchAndStoreHeightLogs = async ({
 
     let allEntries = [];
 
-    const { entries } = await fetchGCPLogs({
+    const searchQuery = `
+    ${ADDITIONAL_QUERY_FILTERS}  
+    `;
+
+    const entries = await fetchLogs({
       startTime,
       endTime,
-      filter: queryfilter,
-      pageSize: 1000,
+      searchQuery,
+      network,
     });
 
     console.log('Fetched page size: ' + entries.length);
     allEntries = allEntries.concat(entries);
 
-    const logEntries = allEntries.map((entry) =>
-      JSON.stringify(entry.jsonPayload)
-    );
+    const logEntries = allEntries.map((entry) => {
+      return JSON.stringify(entry.data);
+    });
 
     if (!logEntries) {
       throw Error('No Entries found for the given Height');

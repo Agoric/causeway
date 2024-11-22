@@ -1,5 +1,8 @@
 // @ts-check
 import { fs } from 'zx';
+import { getCredentials } from './getGCPCredentials.js';
+import { Logging } from '@google-cloud/logging';
+import { networks } from './constants.js';
 
 export const checkFileExists = async ({ filePath, description = 'File' }) => {
   try {
@@ -106,4 +109,82 @@ export const findEntryWithTimestamp = (logs) => {
     }
   }
   return null;
+};
+
+export const fetchLogs = async ({
+  network,
+  searchQuery,
+  startTime,
+  endTime,
+}) => {
+  const projectId = getCredentials().project_id;
+  const logging = new Logging({ projectId });
+
+  const queryfilter = `
+    resource.labels.container_name="${networks[network].container_name}" AND
+    resource.labels.cluster_name="${networks[network].cluster_name}" AND
+    resource.labels.namespace_name="${networks[network].namespace_name}" AND
+    resource.labels.pod_name="${networks[network].pod_name}" AND
+    resource.type="k8s_container" AND
+    ${searchQuery} AND
+    timestamp >= "${startTime}" AND timestamp <= "${endTime}"
+  `;
+
+  const [entries] = await logging.getEntries({ filter: queryfilter });
+  return entries;
+};
+
+export const calculateDaysDifference = (startTimestamp) => {
+  const startTime = new Date(startTimestamp);
+  const currentDate = new Date();
+
+  console.log(`Calculating days difference...`);
+  console.log(`Start Time: ${startTime.toISOString()}`);
+  console.log(`Current Time: ${currentDate.toISOString()}`);
+
+  const timeDifference = currentDate.getTime() - startTime.getTime();
+  console.log(`Time Difference in Milliseconds: ${timeDifference}`);
+
+  const daysDifference = Math.round(timeDifference / (1000 * 60 * 60 * 24));
+  console.log(`Days since START_BLOCK_EVENT_TYPE: ${daysDifference} days`);
+
+  return daysDifference;
+};
+
+export const fetchLogsInBatches = async ({
+  network,
+  searchQuery,
+  batchSize = 10,
+  totalDaysCoverage = 90,
+}) => {
+  try {
+    let promises = [];
+
+    for (
+      let batchStartIndex = 0;
+      batchStartIndex < totalDaysCoverage;
+      batchStartIndex += batchSize
+    ) {
+      const { startTime, endTime } = getTimestampsForBatch(
+        batchStartIndex,
+        totalDaysCoverage
+      );
+      console.log(`Fetching logs for ${startTime} to ${endTime}`);
+
+      promises.push(
+        fetchLogs({
+          network,
+          searchQuery,
+          startTime,
+          endTime,
+        })
+      );
+    }
+
+    const logs = await Promise.all(promises);
+
+    return logs;
+  } catch (error) {
+    console.error(error);
+  }
 };

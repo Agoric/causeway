@@ -45,20 +45,12 @@ export const handleDateRange = async (req, res) => {
   console.log(`Namespace Name: ${networks[network].namespace_name}`);
   console.log(`Pod Name: ${networks[network].pod_name}`);
 
-  const queryfilter = `
-    resource.labels.container_name="${networks[network].container_name}" AND
-    resource.labels.cluster_name="${networks[network].cluster_name}" AND
-    resource.labels.namespace_name="${networks[network].namespace_name}" AND
-    resource.labels.pod_name="${networks[network].pod_name}" AND
-    resource.type="k8s_container"
-  `;
-
-  console.log(`Fetching data from GCP for...`);
+  console.log(`Fetching data from GCP...`);
   const isSuccessful = await fetchAndStoreLogsFromGCP({
     startTime: formattedStartDate,
     endTime: formattedEndDate,
     inputFile,
-    queryfilter,
+    network,
   });
 
   if (!isSuccessful) {
