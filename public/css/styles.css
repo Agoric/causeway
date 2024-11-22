@@ -15,8 +15,7 @@ html {
   border-bottom: 2px solid #ddd;
 }
 
-.formDateRange,
-.formBlockHeight {
+.formDateRange {
   display: flex;
   flex-direction: column;
   align-items: start;
@@ -48,7 +47,7 @@ html {
   }
 }
 
-#submitHeightButton,
+#submitSearchButton,
 #uploadFileButton,
 #submitDateButton {
   background-color: #007bff;
@@ -96,18 +95,16 @@ select {
   font-weight: 500;
 }
 
-#dateForm > #fileHelperText > p,
-#blockHeightForm > #fileHelperText > p {
+#dateForm > #fileHelperText > p {
   margin: 0;
 }
 
-@media (max-width: 649px) {
+@media (max-width: 599px) {
   .topbar {
     flex-direction: column;
     gap: 20px;
   }
-  .formDateRange,
-  .formBlockHeight {
+  .formDateRange {
     display: block;
   }
 
@@ -130,8 +127,22 @@ select {
   #networkForm > #fileHelperText > p {
     display: none;
   }
+}
 
-  #blockHeightForm > #fileHelperText > p {
-    padding-bottom: 8px;
-  }
+#txHashInput,
+#searchTermInput {
+  display: none;
+}
+
+#searchForm {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+#searchFormTop,
+#searchFormBottom {
+  display: flex;
+  gap: 8px;
 }
