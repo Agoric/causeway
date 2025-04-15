@@ -1,0 +1,15 @@
+{
+  "name": "neo4j-insertion",
+  "version": "1.0.0",
+  "description": "Insert Agoric slog events into Neo4j",
+  "type": "module",
+  "main": "insertLogsIntoNeo4j.js",
+  "scripts": {
+    "start": "node insertLogsIntoNeo4j.js"
+  },
+  "dependencies": {
+    "neo4j-driver": "^5.6.0",
+    "zx": "^7.2.6"
+  }
+}
+
