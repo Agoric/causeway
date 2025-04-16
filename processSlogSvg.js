@@ -58,7 +58,7 @@ async function* readJSONLines(data) {
  * @param {AsyncIterable<Object>} entries
  * @returns {Promise<Object>} Diagram data
  */
-async function processSlogEntries(entries) {
+export async function processSlogEntries(entries) {
   // Track vat information
   const vatInfo = new Map();
   // Track message deliveries
@@ -70,8 +70,8 @@ async function processSlogEntries(entries) {
   // Track promises
   const promises = new Map();
   
-  let currentBlockHeight;
-  let currentBlockTime;
+  let currentBlockHeight = 0;
+  let currentBlockTime = 0;
   
   for await (const entry of entries) {
     switch (entry.type) {
