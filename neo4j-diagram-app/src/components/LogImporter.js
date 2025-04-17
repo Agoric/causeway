@@ -228,7 +228,7 @@ const processLogFile = async (file, setProgress) => {
                 if (kd && kd[0] === 'message') {
                   let method = 'unknown';
                   try {
-                    const [_tag, targetRef, { methargs: { body }, result }] = kd;
+                    const [, targetRef, { methargs: { body }, result }] = kd;  // Skip first item (tag)
                     const jsonString = body.startsWith('#') ? body.slice(1) : body;
                     [method] = JSON.parse(jsonString);
                     
@@ -334,7 +334,7 @@ const processLogFile = async (file, setProgress) => {
 function LogImporter() {
   const [uri, setUri] = useState('bolt://localhost:7687');
   const [username, setUsername] = useState('neo4j');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState('secretpassword'); // Default password for convenience
   const [file, setFile] = useState(null);
   const [status, setStatus] = useState('');
   const [isLoading, setIsLoading] = useState(false);

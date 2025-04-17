@@ -1,37 +1,5 @@
-import React, { useState } from 'react';
-import neo4j from 'neo4j-driver';
-
-// Neo4j connection function with error handling
-const createDriver = async (uri, username, password) => {
-  try {
-    // Create driver with encryption disabled for local connections
-    const driver = neo4j.driver(
-      uri, 
-      neo4j.auth.basic(username, password),
-      { 
-        encrypted: uri.includes('neo4j+s') || uri.includes('bolt+s'),
-        disableLosslessIntegers: true
-      }
-    );
-    
-    // Test the connection
-    await driver.verifyConnectivity();
-    return driver;
-  } catch (error) {
-    // Provide more detailed error information
-    let errorMessage = error.message;
-    
-    if (error.code === 'ServiceUnavailable') {
-      errorMessage = 'Neo4j database is not available at the provided URI. Please check that the database is running and accessible.';
-    } else if (error.code === 'Neo.ClientError.Security.Unauthorized') {
-      errorMessage = 'Invalid username or password. Please check your credentials.';
-    } else if (error.message.includes('WebSocket connection failure')) {
-      errorMessage = 'WebSocket connection failed. This may be due to CORS restrictions or network issues. For local Neo4j, make sure to use bolt://localhost:7687 and not http://localhost:7474.';
-    }
-    
-    throw new Error(errorMessage);
-  }
-};
+import React, { useState, useEffect } from 'react';
+import api from '../services/api';
 
 // Function to generate Mermaid sequence diagram from Neo4j data with pagination
 const generateMermaidSequenceDiagram = (interactions, vats, maxInteractionsPerPage = 20) => {
@@ -59,16 +27,8 @@ const generateMermaidSequenceDiagram = (interactions, vats, maxInteractionsPerPa
     pages.push(interactions.slice(startIdx, endIdx));
   }
   
-  // Generate diagram with pages
-  let diagram = '';
-  
-  pages.forEach((pageInteractions, pageIndex) => {
-    // Start a new diagram for each page
-    if (pageIndex > 0) {
-      // Ensure a complete separation between pages - each page is a separate diagram
-      diagram += `\n---\n`;
-    }
-    
+  // Return an array of separate diagram definitions that the MermaidDiagram component will render individually
+  const diagrams = pages.map((pageInteractions, pageIndex) => {
     // Generate a title showing page number and time range
     const fromTime = new Date(pageInteractions[0].time * (pageInteractions[0].time > 10000000000 ? 1 : 1000))
       .toISOString().replace('T', ' ').substring(0, 19);
@@ -76,25 +36,47 @@ const generateMermaidSequenceDiagram = (interactions, vats, maxInteractionsPerPa
                           (pageInteractions[pageInteractions.length - 1].time > 10000000000 ? 1 : 1000))
       .toISOString().replace('T', ' ').substring(0, 19);
     
-    // Header for this page
-    diagram += `sequenceDiagram\n`;
+    // Create a complete diagram definition for this page
+    let diagram = `sequenceDiagram\n`;
     diagram += `    title Page ${pageIndex + 1}/${totalPages}: ${fromTime} to ${toTime}\n`;
     
-    // Add participants for this page
-    diagram += generateParticipants(vats, pageInteractions);
+    // Add ALL participants for EVERY page - this ensures consistent display across pages
+    diagram += generateParticipants(vats, interactions); // Pass ALL interactions to show all participants
     
-    // Add interactions for this page
+    // But only add the interactions for this specific page
     diagram += generateInteractions(pageInteractions, vats);
+    
+    // If this page has no interactions for a particular vat, add a note
+    if (pageInteractions.length === 0) {
+      diagram += `    Note over System: No interactions on this page\n`;
+    } else if (pageInteractions.length < 3) {
+      // For pages with very few interactions, add a note to make the diagram more readable
+      diagram += `    Note over System: Limited interactions on this page (${pageInteractions.length})\n`;
+    }
+    
+    return diagram;
   });
   
-  return diagram;
+  // Join with a special delimiter that we'll use to split the diagrams later
+  return diagrams.join('\n%%DIAGRAM_PAGE_BREAK%%\n');
 };
 
 // Function to generate a single page diagram (no pagination)
 const generateSinglePageDiagram = (interactions, vats) => {
   let diagram = 'sequenceDiagram\n';
   
-  // Add participants
+  // For time range title
+  if (interactions.length > 0) {
+    const fromTime = new Date(interactions[0].time * (interactions[0].time > 10000000000 ? 1 : 1000))
+      .toISOString().replace('T', ' ').substring(0, 19);
+    const toTime = new Date(interactions[interactions.length - 1].time * 
+                        (interactions[interactions.length - 1].time > 10000000000 ? 1 : 1000))
+      .toISOString().replace('T', ' ').substring(0, 19);
+    
+    diagram += `    title Sequence Diagram: ${fromTime} to ${toTime}\n`;
+  }
+  
+  // Add all participants
   diagram += generateParticipants(vats, interactions);
   
   // Add interactions
@@ -113,29 +95,32 @@ const generateParticipants = (vats, interactions) => {
     vatIds.add(vat.vatID);
   });
   
-  // Check if we need System participant
+  // Check if we need System participant (for any page)
   const hasSystemMessages = interactions.some(i => i.sourceVat === 'system' || i.targetVat === 'system');
   
-  // Add vat participants
+  // Add all vat participants regardless of involvement in this specific page
   Array.from(vatIds).forEach(vatId => {
-    // Skip vats that aren't in this page's interactions
+    // Sanitize vatId for Mermaid
+    const safeVatId = `Vat_${vatId.replace(/[^\w]/g, '_')}`;
+    
+    // Get vat name if available
+    const vat = vats.find(v => v.vatID === vatId);
+    const displayName = vat?.name || vatId;
+    
+    // Truncate long vat names for better readability
+    const truncatedName = displayName.length > 15 ? displayName.substring(0, 15) + '...' : displayName;
+    
+    // Check if this vat is involved in this page's interactions (for ordering/highlighting)
     const vatIsInvolved = interactions.some(i => 
       i.sourceVat === vatId || i.targetVat === vatId
     );
     
-    if (!vatIsInvolved) return;
-    
-    // Sanitize vatId for Mermaid
-    const safeVatId = `Vat_${vatId.replace(/[^\w]/g, '_')}`;
-    // Get vat name if available
-    const vat = vats.find(v => v.vatID === vatId);
-    const displayName = vat?.name || vatId;
-    // Truncate long vat names for better readability
-    const truncatedName = displayName.length > 15 ? displayName.substring(0, 15) + '...' : displayName;
+    // Add all participants - Mermaid doesn't support conditional styling through syntax
+    // Instead, we'll just include all participants consistently
     result += `    participant ${safeVatId} as "${truncatedName}"\n`;
   });
   
-  // Add system participant if needed
+  // Add system participant if needed anywhere in the diagram
   if (hasSystemMessages) {
     result += `    participant System as "System"\n`;
   }
@@ -160,9 +145,9 @@ const generateInteractions = (interactions, vats) => {
     // Skip if missing source or target
     if (!sourceVat || !targetVat) return;
     
-    // Format timestamp for note
-    const formattedTime = new Date(time * (time > 10000000000 ? 1 : 1000))
-      .toISOString().replace('T', ' ').substring(0, 19);
+    // Format timestamp (for debugging or future use)
+    // const formattedTime = new Date(time * (time > 10000000000 ? 1 : 1000))
+    //   .toISOString().replace('T', ' ').substring(0, 19);
     
     // Handle the syscall case specially
     if (type === 'syscall' && vatIds.has(sourceVat)) {
@@ -260,216 +245,124 @@ const parseTimestamp = (timestampStr) => {
   return isNaN(num) ? null : num;
 };
 
+// API base URL - change this to match your backend URL in production
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
+
 // Main component for fetching and displaying Neo4j data as a Mermaid diagram
 function Neo4jSequenceDiagram({ onDiagramGenerated }) {
-  const [uri, setUri] = useState('bolt://localhost:7687');
-  const [username, setUsername] = useState('neo4j');
-  const [password, setPassword] = useState('');
-  const [startTime, setStartTime] = useState('');
-  const [endTime, setEndTime] = useState('');
+  // We no longer need database connection credentials
+  const [startTime, setStartTime] = useState('1629570627.218393'); // Default start time
+  const [endTime, setEndTime] = useState('1829570627.218393'); // Default end time
   const [interactionsPerPage, setInteractionsPerPage] = useState(20);
   const [status, setStatus] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('');
   
-  // Function to fetch data from Neo4j
+  // Check API health on component mount
+  useEffect(() => {
+    const checkApiHealth = async () => {
+      try {
+        const data = await api.checkHealth();
+        setConnectionStatus('API server connected to Neo4j database');
+      } catch (error) {
+        setConnectionStatus('Warning: Cannot connect to API server');
+      }
+    };
+    
+    checkApiHealth();
+  }, []);
+  
+  // Function to fetch data from our API
   const fetchData = async () => {
     setIsLoading(true);
-    setStatus('Connecting to Neo4j...');
+    setStatus('Fetching data from server...');
     
-    // Parse Unix timestamps
-    const startTimestamp = parseTimestamp(startTime);
-    const endTimestamp = parseTimestamp(endTime) || Math.floor(Date.now() / 1000); // Default to now
-    
-    let driver;
     try {
-      driver = await createDriver(uri, username, password);
+      // Parse Unix timestamps
+      const startTimestamp = parseTimestamp(startTime);
+      const endTimestamp = parseTimestamp(endTime) || Math.floor(Date.now() / 1000); // Default to now
       
-      setStatus('Connected. Fetching data...');
+      // Fetch vats and interactions in parallel
+      const [vats, interactionsData] = await Promise.all([
+        api.getVats(),
+        api.getInteractions(startTimestamp, endTimestamp)
+      ]);
       
-      const session = driver.session();
+      const allInteractions = interactionsData.interactions || [];
       
-      try {
-        // Get all vats first
-        const vatsQuery = `
-          MATCH (v:Vat)
-          RETURN v.vatID as vatID, v.name as name
-        `;
-        
-        const vatsResult = await session.run(vatsQuery);
-        const vats = vatsResult.records.map(record => ({
-          vatID: record.get('vatID'),
-          name: record.get('name')
-        }));
-        
-        // Get message interactions (message to vat)
-        const messageQuery = `
-          MATCH (m:Message)-[call:CALL]->(target:Vat),
-                (caller:Vat)-[:CALLED_BY]->(m)
-          WHERE m.time >= $startTime AND m.time <= $endTime
-          RETURN caller.vatID  AS sourceVat,
-                target.vatID  AS targetVat,
-                m.method as method,
-                m.time as time,
-                'message' as type
-          ORDER BY m.time
-        `;
-        
-        // Get notify interactions
-        const notifyQuery = `
-          MATCH  (n:Notify)-[:CALLED_BY]->(caller:Vat),
-                (n)-[:CALL]->(target:Vat) 
-          WHERE  n.time >= $startTime
-            AND  n.time <= $endTime
-          RETURN caller.vatID  AS sourceVat,
-                target.vatID  AS targetVat,
-                n.method      AS method,
-                n.time        AS time,
-                'notify'      AS type
-          ORDER BY n.time;
-        `;
-        
-        // Execute all queries
-        let messageInteractions = [];
-        let notifyInteractions = [];
-        
-        try {
-          const messageResult = await session.run(messageQuery, { startTime: startTimestamp, endTime: endTimestamp });
-          messageInteractions = messageResult.records.map(record => ({
-            sourceVat: record.get('sourceVat'),
-            targetVat: record.get('targetVat'),
-            method: record.get('method'),
-            time: record.get('time').toNumber ? record.get('time').toNumber() : record.get('time'),
-            type: record.get('type')
-          }));
-        } catch (err) {
-          console.warn('Error fetching message interactions:', err);
-        }
-        
-        try {
-          const notifyResult = await session.run(notifyQuery, { startTime: startTimestamp, endTime: endTimestamp });
-          notifyInteractions = notifyResult.records.map(record => ({
-            sourceVat: record.get('sourceVat'),
-            targetVat: record.get('targetVat'),
-            method: record.get('method'),
-            time: record.get('time').toNumber ? record.get('time').toNumber() : record.get('time'),
-            type: record.get('type')
-          }));
-        } catch (err) {
-          console.warn('Error fetching notify interactions:', err);
-        }
-        
-        // Process and sanitize all interactions
-        const processedMessageInteractions = messageInteractions.map(interaction => {
-          // Ensure method is valid for Mermaid
-          if (interaction.method) {
-            interaction.method = String(interaction.method).replace(/[^\w\s\-.,;:()]/g, '_');
-          }
-          return interaction;
-        });
-        
-        const processedNotifyInteractions = notifyInteractions.map(interaction => {
-          // Ensure method is valid for Mermaid
-          if (interaction.method) {
-            interaction.method = String(interaction.method).replace(/[^\w\s\-.,;:()]/g, '_');
-          }
-          return interaction;
-        });
-        
-        // Combine all interactions
-        const allInteractions = [
-          ...processedMessageInteractions,
-          ...processedNotifyInteractions,
-        ];
-        
-        await session.close();
-        
-        // Generate the Mermaid diagram with pagination
-        setStatus(`Found ${allInteractions.length} interactions. Generating diagram...`);
-        const diagram = generateMermaidSequenceDiagram(allInteractions, vats, interactionsPerPage);
-        onDiagramGenerated(diagram);
-        
-        // Calculate pages for status message
-        const pageCount = Math.ceil(allInteractions.length / interactionsPerPage);
-        const pagesInfo = pageCount > 1 ? ` Split into ${pageCount} pages.` : '';
-        
-        setStatus(`Diagram generated successfully with ${allInteractions.length} interactions between ${vats.length} vats.${pagesInfo}`);
-      } catch (dbError) {
-        console.error('Database query error:', dbError);
-        setStatus(`Database error: ${dbError.message}`);
-      } finally {
-        await session.close();
-      }
+      // Process and sanitize interactions
+      const processedInteractions = api.sanitizeInteractions(allInteractions);
+      
+      // Generate the Mermaid diagram with pagination
+      setStatus(`Found ${processedInteractions.length} interactions. Generating diagram...`);
+      const diagram = generateMermaidSequenceDiagram(processedInteractions, vats, interactionsPerPage);
+      onDiagramGenerated(diagram);
+      
+      // Calculate pages for status message
+      const pageCount = Math.ceil(processedInteractions.length / interactionsPerPage);
+      const pagesInfo = pageCount > 1 ? ` Split into ${pageCount} pages.` : '';
+      
+      setStatus(`Diagram generated successfully with ${processedInteractions.length} interactions between ${vats.length} vats.${pagesInfo}`);
     } catch (error) {
-      console.error('Connection error:', error);
-      setStatus(`Connection error: ${error.message}`);
+      console.error('Error fetching data:', error);
+      setStatus(`Error: ${error.message}`);
     } finally {
-      if (driver) {
-        await driver.close();
-      }
       setIsLoading(false);
     }
   };
   
   return (
     <div className="neo4j-form">
-      <h3>Connect to Neo4j</h3>
+      <h3>Generate Sequence Diagram</h3>
       
-      <div className="form-group">
-        <label>Neo4j URI:</label>
-        <input
-          type="text"
-          value={uri}
-          onChange={(e) => setUri(e.target.value)}
-          placeholder="bolt://localhost:7687"
-        />
-        <small className="form-text">
-          For local Neo4j use: bolt://localhost:7687
-        </small>
-      </div>
-      
-      <div className="form-group">
-        <label>Username:</label>
-        <input
-          type="text"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          placeholder="neo4j"
-        />
-      </div>
-      
-      <div className="form-group">
-        <label>Password:</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="Your password"
-        />
-      </div>
+      {connectionStatus && (
+        <div className={`connection-status ${connectionStatus.includes('Warning') ? 'warning' : 'success'}`}>
+          <div className="status-indicator"></div>
+          <span>{connectionStatus}</span>
+        </div>
+      )}
       
       <div className="form-group">
         <label>Start Time (Unix timestamp):</label>
-        <input
-          type="text"
-          value={startTime}
-          onChange={(e) => setStartTime(e.target.value)}
-          placeholder="1729570627.218393"
-        />
+        <div className="input-with-actions">
+          <input
+            type="text"
+            value={startTime}
+            onChange={(e) => setStartTime(e.target.value)}
+            placeholder="1629570627.218393"
+          />
+          <button 
+            className="input-action-button"
+            onClick={() => setStartTime('1629570627.218393')}
+            title="Reset to default start time"
+          >
+            Reset
+          </button>
+        </div>
         <small className="form-text">
-          Enter Unix timestamp, e.g. 1729570627.218393
+          Default start time is pre-filled for convenience
         </small>
       </div>
       
       <div className="form-group">
         <label>End Time (Unix timestamp):</label>
-        <input
-          type="text"
-          value={endTime}
-          onChange={(e) => setEndTime(e.target.value)}
-          placeholder="1729570727.218393"
-        />
+        <div className="input-with-actions">
+          <input
+            type="text"
+            value={endTime}
+            onChange={(e) => setEndTime(e.target.value)}
+            placeholder="1829570627.218393"
+          />
+          <button 
+            className="input-action-button"
+            onClick={() => setEndTime('1829570627.218393')}
+            title="Reset to default end time"
+          >
+            Reset
+          </button>
+        </div>
         <small className="form-text">
-          Leave empty to use current time
+          Default end time is pre-filled for convenience
         </small>
       </div>
       
@@ -490,7 +383,7 @@ function Neo4jSequenceDiagram({ onDiagramGenerated }) {
       
       <button 
         onClick={fetchData}
-        disabled={isLoading || !password}
+        disabled={isLoading}
       >
         {isLoading ? 'Loading...' : 'Generate Diagram'}
       </button>
@@ -500,12 +393,11 @@ function Neo4jSequenceDiagram({ onDiagramGenerated }) {
       <div className="troubleshooting">
         <h4>Troubleshooting</h4>
         <ul>
-          <li>Make sure your Neo4j database is running</li>
-          <li>For local installations, use <code>bolt://localhost:7687</code></li>
-          <li>Check that username and password are correct</li>
-          <li>For CORS issues, you may need to configure Neo4j to allow browser connections</li>
-          <li>Times in the database are Unix timestamps (e.g., 1729570627.218393)</li>
+          <li>Make sure the API server is running (default: <code>http://localhost:3001</code>)</li>
+          <li>The backend server manages the Neo4j connection securely</li>
+          <li>Times in the database are Unix timestamps (e.g., 1629570627.218393)</li>
           <li>Try adjusting the "Interactions Per Page" value to break diagrams into manageable pages</li>
+          <li>If you encounter errors, check the server logs for details</li>
         </ul>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
 
 // Configure Mermaid globally with bigger diagram settings
@@ -38,9 +38,44 @@ mermaid.initialize({
 function MermaidDiagram({ code }) {
   const mermaidRef = useRef(null);
   const containerRef = useRef(null);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [pages, setPages] = useState([]);
+  const [totalPages, setTotalPages] = useState(0);
 
+  // Split diagram code into separate pages when code changes
   useEffect(() => {
-    if (mermaidRef.current) {
+    if (code) {
+      // Check if the code contains our page break marker
+      if (code.includes('%%DIAGRAM_PAGE_BREAK%%')) {
+        const diagramPages = code.split('%%DIAGRAM_PAGE_BREAK%%');
+        setPages(diagramPages);
+        setTotalPages(diagramPages.length);
+        setCurrentPage(0); // Reset to first page when new diagram is loaded
+      } else {
+        // Single page diagram
+        setPages([code]);
+        setTotalPages(1);
+        setCurrentPage(0);
+      }
+    }
+  }, [code]);
+
+  // Handle page navigation
+  const nextPage = () => {
+    if (currentPage < totalPages - 1) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const prevPage = () => {
+    if (currentPage > 0) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  // Render the current page diagram
+  useEffect(() => {
+    if (mermaidRef.current && pages.length > 0) {
       const renderDiagram = async () => {
         try {
           // Clear previous content
@@ -51,8 +86,8 @@ function MermaidDiagram({ code }) {
           tempDiv.className = 'mermaid';
           tempDiv.style.fontSize = '16px'; // Bigger font size
           
-          // Add the code to the container
-          tempDiv.textContent = code;
+          // Add the code for the current page to the container
+          tempDiv.textContent = pages[currentPage];
           mermaidRef.current.appendChild(tempDiv);
           
           // Process the diagram
@@ -87,6 +122,9 @@ function MermaidDiagram({ code }) {
               const currentSize = parseFloat(text.getAttribute('font-size') || 12);
               text.setAttribute('font-size', `${currentSize * 1.2}`);
             });
+
+            // Add tooltips to participant labels
+            addParticipantTooltips(svgElement);
           }
         } catch (error) {
           console.error('Mermaid rendering error:', error);
@@ -98,6 +136,95 @@ function MermaidDiagram({ code }) {
             </div>
           `;
         }
+      };
+      
+      // Helper function to add tooltips to participant labels
+      const addParticipantTooltips = (svg) => {
+        // Find all participant rectangles and their text labels
+        const actorRects = svg.querySelectorAll('rect.actor, .labelBox');
+        const actorLabels = svg.querySelectorAll('.actor, .labelText');
+        
+        // Process both the rectangles and labels for better tooltip coverage
+        // First, add tooltips to the actor rectangles (the participant boxes)
+        actorRects.forEach(rect => {
+          // Find the associated text label
+          const textLabel = findLabelForRect(rect, actorLabels);
+          if (textLabel) {
+            const displayedName = textLabel.textContent.trim();
+            let tooltipText;
+            
+            // Create a detailed tooltip based on participant type
+            if (displayedName.includes('System')) {
+              tooltipText = 'System: The Neo4j system participant';
+            } else {
+              // For vat participants, show full info
+              let vatName = displayedName;
+              // Check if truncated
+              if (displayedName.endsWith('...')) {
+                // Extract just the vat name without the truncation
+                vatName = displayedName.replace('...', '');
+              }
+              tooltipText = `Vat: ${vatName}\nClick to focus on this vat's interactions`;
+            }
+            
+            // Add title element for tooltip
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = tooltipText;
+            rect.appendChild(title);
+            
+            // Add hover effect class
+            rect.classList.add('participant-hover');
+          }
+        });
+        
+        // Also add tooltips to the text labels themselves
+        actorLabels.forEach(label => {
+          const displayedName = label.textContent.trim();
+          let tooltipText;
+          
+          if (displayedName.includes('System')) {
+            tooltipText = 'System: The Neo4j system participant';
+          } else {
+            // For vat participants, show full info
+            let vatName = displayedName;
+            // Check if truncated
+            if (displayedName.endsWith('...')) {
+              // Extract just the vat name without the truncation
+              vatName = displayedName.replace('...', '');
+            }
+            tooltipText = `Vat: ${vatName}`;
+          }
+          
+          // Add title element for tooltip
+          const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+          title.textContent = tooltipText;
+          label.appendChild(title);
+          
+          // Add hover effect class
+          label.classList.add('has-tooltip');
+        });
+      };
+      
+      // Helper function to find the text label associated with a rectangle
+      const findLabelForRect = (rect, labels) => {
+        // Get the rectangle's position
+        const rectX = parseFloat(rect.getAttribute('x'));
+        const rectY = parseFloat(rect.getAttribute('y'));
+        const rectWidth = parseFloat(rect.getAttribute('width'));
+        
+        // Find a label that's positioned within or near the rectangle
+        for (const label of labels) {
+          const labelX = parseFloat(label.getAttribute('x'));
+          const labelY = parseFloat(label.getAttribute('y'));
+          
+          // Check if the label is positioned within/near the rectangle
+          if (Math.abs(labelX - (rectX + rectWidth/2)) < rectWidth/2 + 5 &&
+              Math.abs(labelY - (rectY + 15)) < 20) {
+            return label;
+          }
+        }
+        
+        return null;
       };
       
       // Helper function to extend the lifelines in the sequence diagram
@@ -182,11 +309,34 @@ function MermaidDiagram({ code }) {
 
       renderDiagram();
     }
-  }, [code]);
+  }, [pages, currentPage]); // Re-render when currentPage changes
 
   return (
-    <div className="mermaid-container" ref={containerRef}>
-      <div ref={mermaidRef} className="mermaid-output" />
+    <div className="mermaid-wrapper">
+      {totalPages > 1 && (
+        <div className="pagination-controls">
+          <button 
+            onClick={prevPage} 
+            disabled={currentPage === 0}
+            className="pagination-button"
+          >
+            ← Previous Page
+          </button>
+          <span className="page-indicator">
+            Page {currentPage + 1} of {totalPages}
+          </span>
+          <button 
+            onClick={nextPage} 
+            disabled={currentPage === totalPages - 1}
+            className="pagination-button"
+          >
+            Next Page →
+          </button>
+        </div>
+      )}
+      <div className="mermaid-container" ref={containerRef}>
+        <div ref={mermaidRef} className="mermaid-output" />
+      </div>
     </div>
   );
 }
