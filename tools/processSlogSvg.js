@@ -1,3 +1,6 @@
+// This file is a copy of the root file, moved to the tools directory for better organization
+
+// Original content from processSlogSvg.js
 import fs from 'fs';
 import path from 'path';
 import { pipeline } from 'stream';

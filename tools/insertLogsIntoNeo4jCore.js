@@ -1,3 +1,6 @@
+// This file is a copy of the root file, moved to the tools directory for better organization
+
+// Original content from insertLogsIntoNeo4jCore.js
 // pseudo-code and example (not fully tested)
 
 // Imports
@@ -36,7 +39,7 @@ async function* processSlogEntries(entries) {
   let currentBlockHeight = undefined;
   let currentBlockTime = undefined;
   
-  // We’ll maintain a session for batching queries
+  // We'll maintain a session for batching queries
   const session = driver.session();
 
   try {
@@ -144,7 +147,7 @@ async function* processSlogEntries(entries) {
           break;
         }
         case 'syscall': {
-          // syscalls represent outgoing calls from a vat. If it’s a 'send':
+          // syscalls represent outgoing calls from a vat. If it's a 'send':
           // Example ksc: ['send', target, {method, result}]
           const { ksc } = entry;
           if (ksc && ksc[0] === 'send') {
@@ -181,7 +184,7 @@ async function* processSlogEntries(entries) {
             };
             
             // Linking to target vat is trickier because we might not have a deliver event yet.
-            // But we have a target reference. If the target is a vat, we can link after it’s created.
+            // But we have a target reference. If the target is a vat, we can link after it's created.
             // For now, just wait until a deliver event clarifies the receiver.
           }
           break;

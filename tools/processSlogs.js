@@ -1,3 +1,6 @@
+// This file is a copy of the root file, moved to the tools directory for better organization
+
+// Original content from processSlogs.js
 import neo4j from 'neo4j-driver';
 import fs from 'fs';
 import zlib from 'zlib';
