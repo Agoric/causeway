@@ -10,8 +10,8 @@ dotenv.config();
 
 // Neo4j connection settings from environment variables
 const NEO4J_URI = process.env.NEO4J_URI || 'bolt://localhost:7687';
-const NEO4J_USER = process.env.NEO4J_USER || 'neo4j';
-const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD || 'secretpassword';
+const NEO4J_USER = process.env.NEO4J_USER;
+const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD;
 
 // Create a Neo4j driver instance
 const driver = neo4j.driver(

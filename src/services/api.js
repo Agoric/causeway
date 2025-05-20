@@ -38,6 +38,7 @@ export const getInteractions = async (startTime, endTime) => {
   url.searchParams.append('startTime', startTime);
   url.searchParams.append('endTime', endTime);
   
+  console.log(`Fetching interactions from: ${url}`);
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Error fetching interactions: ${response.statusText}`);

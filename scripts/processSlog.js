@@ -6,7 +6,6 @@ import path from 'path';
 import { pipeline } from 'stream';
 import { promisify } from 'util';
 import zlib from 'zlib';
-import readline from 'readline';
 import { fileURLToPath } from 'url';
 
 // Import PlantUML formatter from Agoric SDK
