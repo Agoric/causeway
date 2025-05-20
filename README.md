@@ -12,7 +12,7 @@ docker run \
 2. Import slogs to neo4j
 
 ```bash
-(cd scripts; node slog2neo4j.js /path/to/your/slogs.json)
+(cd scripts; node slog2neo4j.js ../data/slogs.json)
 ```
 
 3. Build and run the API server and UI
