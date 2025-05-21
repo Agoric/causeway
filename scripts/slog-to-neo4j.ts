@@ -1,24 +1,9 @@
 #!/usr/bin/env ts-node
-
-import neo4j, { Driver, Session } from 'neo4j-driver';
+import { Driver, Session } from 'neo4j-driver';
 import fs from 'fs';
 import { processSlogEntries, readJSONLines } from './slog-utils';
 import { SlogData } from '../app/types';
-
-const config = {
-  neo4j: {
-    uri: process.env.NEO4J_URI || 'neo4j://localhost:7687',
-    user: process.env.NEO4J_USER || 'neo4j',
-    password: process.env.NEO4J_PASSWORD || 'secretpassword',
-  },
-  batch: {
-    size: parseInt(process.env.BATCH_SIZE || '10', 10),
-    retries: parseInt(process.env.BATCH_RETRIES || '3', 10),
-  },
-  logging: {
-    level: process.env.LOG_LEVEL || 'info',
-  },
-};
+import driver from '../lib/neo4j';
 
 class Metrics {
   processedBlocks: number;
@@ -57,21 +42,7 @@ const metrics = new Metrics();
 /**
  * Sets up database schema, constraints, and indexes
  */
-async function setupSchema(session: Session) {
-  const constraints = [
-    `CREATE CONSTRAINT block_id IF NOT EXISTS
-     FOR (b:Block) REQUIRE b.blockNum IS UNIQUE`,
-
-    `CREATE CONSTRAINT vat_id IF NOT EXISTS
-     FOR (v:Vat) REQUIRE v.vatID IS UNIQUE`,
-
-    `CREATE CONSTRAINT syscall_id IF NOT EXISTS
-     FOR (s:Syscall) REQUIRE (s.crankNum, s.syscallNum) IS NODE KEY`,
-
-    `CREATE CONSTRAINT promise_id IF NOT EXISTS
-     FOR (p:Promise) REQUIRE p.kpid IS UNIQUE`,
-  ];
-
+const setupSchema = async (session: Session) => {
   const indexes = [
     `CREATE INDEX delivery_id IF NOT EXISTS
      FOR (d:Delivery) ON (d.crankNum)`,
@@ -83,42 +54,12 @@ async function setupSchema(session: Session) {
      FOR (o:Object) ON (o.kref)`,
   ];
 
-  // for (const constraint of constraints) {
-  //   await session.run(constraint);
-  // }
-
   for (const index of indexes) {
     await session.run(index);
   }
-}
+};
 
-/**
- * Connects to Neo4j database with retry mechanism
- */
-async function connectToNeo4j(retries = 3) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const driver = neo4j.driver(
-        config.neo4j.uri,
-        neo4j.auth.basic(config.neo4j.user, config.neo4j.password)
-      );
-      await driver.verifyConnectivity();
-      console.log('Connected to Neo4j');
-      return driver;
-    } catch (error) {
-      if (attempt === retries) throw error;
-      console.log(`Connection attempt ${attempt} failed, retrying...`);
-      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
-    }
-  }
-}
-
-/**
- * Generate Neo4j nodes and relationships from processed slog data
- * @param {Object} data - Processed slog data
- * @param {neo4j.Session} session - Active Neo4j session
- */
-async function generateNeo4jGraph(data: SlogData, session: Session) {
+const generateNeo4jGraph = async (data: SlogData, session: Session) => {
   const { vats, deliveries, syscalls, blocks } = data;
 
   // Create Vat nodes
@@ -212,12 +153,12 @@ async function generateNeo4jGraph(data: SlogData, session: Session) {
       }
     );
   }
-}
+};
 
 /**
  * Process a single log file
  */
-async function processFileForNeo4j(slogfileName: string, driver: Driver) {
+const processFileForNeo4j = async (slogfileName: string, driver: Driver) => {
   console.log(`Processing ${slogfileName} for Neo4j`);
   const session = driver.session();
 
@@ -229,9 +170,9 @@ async function processFileForNeo4j(slogfileName: string, driver: Driver) {
   await generateNeo4jGraph(diagramData, session);
 
   console.log('Diagram data:', diagramData);
-}
+};
 
-async function run() {
+const run = async () => {
   const [_node, _script, ...slogfileNames] = process.argv;
 
   if (slogfileNames.length === 0) {
@@ -239,7 +180,6 @@ async function run() {
     process.exit(64);
   }
 
-  const driver = await connectToNeo4j(config.batch.retries);
   if (!driver) {
     throw new Error('Failed to connect to Neo4j. Driver is not defined.');
   }
@@ -255,10 +195,6 @@ async function run() {
       await processFileForNeo4j(slogfileName, driver);
     }
 
-    console.log('\nRunning analysis queries...');
-    // session = driver.session();
-    // await runAnalysisQueries(session);
-
     console.log('\nProcessing completed!');
     metrics.logStats();
   } catch (error) {
@@ -269,7 +205,7 @@ async function run() {
     await driver.close();
     console.log('Database connections closed');
   }
-}
+};
 
 process.on('unhandledRejection', (error) => {
   console.error('Unhandled promise rejection:', error);

@@ -5,7 +5,7 @@ import './page.css';
 import LeftPane from './components/LeftPane';
 import MermaidDiagram from './components/MermaidDiagram';
 
-export default function Page() {
+const Page = () => {
   const [mermaidCode, setMermaidCode] = useState(`sequenceDiagram
     participant A as System
     participant B as Vat1
@@ -33,4 +33,6 @@ export default function Page() {
       </div>
     </div>
   );
-}
+};
+
+export default Page;
