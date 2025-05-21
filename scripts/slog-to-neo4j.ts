@@ -3,6 +3,7 @@ import fs from 'fs';
 import { processSlogEntries, readJSONLines } from './slog-utils';
 import { SlogData } from '../app/types';
 import driver from '../lib/neo4j';
+import chokidar from 'chokidar';
 
 class Metrics {
   processedBlocks: number = 0;
@@ -167,6 +168,82 @@ const processFileForNeo4j = async (slogfileName: string, driver: Driver) => {
   console.log('Diagram data:', diagramData);
 };
 
+const processIncremental = async (
+  slogfileName: string,
+  driver: Driver,
+  startPos: number,
+  endPos: number,
+) => {
+  const session = driver.session();
+  try {
+    const readStream = fs.createReadStream(slogfileName, {
+      start: startPos,
+      end: endPos - 1, // end is inclusive in Node.js
+      encoding: 'utf-8',
+    });
+
+    const entries = readJSONLines(readStream);
+    const diagramData = await processSlogEntries(entries);
+
+    await generateNeo4jGraph(diagramData, session);
+
+    metrics.processedBlocks += diagramData.blocks.length;
+    metrics.processedDeliveries += diagramData.deliveries.length;
+    metrics.processedSyscalls += diagramData.syscalls.length;
+    metrics.logStats();
+  } catch (error) {
+    console.error('Error processing incremental data:', error);
+    metrics.failedBatches += 1;
+  } finally {
+    await session.close();
+  }
+};
+
+/**
+ * Sets up file watcher and processes initial data
+ */
+const watchFile = (slogfileName: string, driver: Driver) => {
+  let position = 0;
+
+  // Process initial content
+  try {
+    const stats = fs.statSync(slogfileName);
+    position = stats.size;
+    processIncremental(slogfileName, driver, 0, position);
+  } catch (error) {
+    console.error(`Error initial processing for ${slogfileName}:`, error);
+  }
+
+  // Watch for changes
+  const watcher = chokidar.watch(slogfileName, {
+    persistent: true,
+    ignoreInitial: true,
+  });
+
+  watcher.on('change', async (path) => {
+    try {
+      const stats = fs.statSync(slogfileName);
+      const newSize = stats.size;
+
+      if (newSize < position) {
+        console.log('File truncated, resetting position');
+        position = 0;
+      }
+
+      if (newSize > position) {
+        await processIncremental(slogfileName, driver, position, newSize);
+        position = newSize;
+      }
+    } catch (error) {
+      console.error('Error handling file change:', error);
+    }
+  });
+
+  watcher.on('error', (error) => {
+    console.error('Watcher error:', error);
+  });
+};
+
 const run = async () => {
   const [_node, _script, ...slogfileNames] = process.argv;
 
@@ -178,27 +255,24 @@ const run = async () => {
   if (!driver) {
     throw new Error('Failed to connect to Neo4j. Driver is not defined.');
   }
-  let session;
 
   try {
-    session = driver.session();
+    const session = driver.session();
     await setupSchema(session);
     await session.close();
 
-    for (const slogfileName of slogfileNames) {
-      console.log(`\nProcessing file: ${slogfileName}`);
-      await processFileForNeo4j(slogfileName, driver);
-    }
+    slogfileNames.forEach((slogfileName) => {
+      watchFile(slogfileName, driver);
+    });
 
-    console.log('\nProcessing completed!');
+    console.log('Watching for changes...');
     metrics.logStats();
+
+    // Keep process alive
+    process.stdin.resume();
   } catch (error) {
     console.error('Fatal error during processing:', error);
     process.exit(1);
-  } finally {
-    if (session) await session.close();
-    await driver.close();
-    console.log('Database connections closed');
   }
 };
 

@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "chokidar": "^4.0.3",
     "mermaid": "^10.8.0",
     "neo4j-driver": "^5.28.1",
     "next": "^15.3.2",
