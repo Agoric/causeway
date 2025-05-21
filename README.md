@@ -15,7 +15,7 @@ yarn install
 3. Import slogs to neo4j
 
 ```bash
-(cd scripts; node slog2neo4j.js ../data/slogs.json)
+yarn slogs:import-static
 ```
 
 4. Start the Next.js development server
