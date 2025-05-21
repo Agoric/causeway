@@ -20,6 +20,12 @@
   yarn slogs:import-static
   ```
 
+  Import a3p slogs to neo4j:
+
+  ```
+  yarn slogs:import
+  ```
+
 - Start the Next.js development server
 
   ```bash
