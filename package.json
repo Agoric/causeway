@@ -12,7 +12,8 @@
   },
   "scripts": {
     "start:chain": "bash scripts/init.sh && docker compose up -d",
-    "slogs:import-static": "cd scripts && node slog2neo4j.js slogs.json",
+    "slogs:import": "vite-node scripts/slog-to-neo4j.ts scripts/a3p.slog",
+    "slogs:import-static": "vite-node scripts/slog-to-neo4j.ts scripts/slogs.json",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
@@ -24,6 +25,7 @@
     "@types/react": "19.1.4",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
-    "typescript": "5.8.3"
+    "typescript": "5.8.3",
+    "vite-node": "^3.1.4"
   }
 }

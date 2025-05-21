@@ -5,10 +5,11 @@ import {
   Block,
   Delivery,
   Interaction,
-  Neo4jGraphInput,
+  SlogData,
   PromiseObj,
   Syscall,
   Vat,
+  State,
 } from './types';
 
 export const createNeo4jDriver = async (): Promise<Driver> => {
@@ -52,10 +53,7 @@ export const formatUnixTimestamp = (timestamp: number) => {
   }
 };
 
-export const generateNeo4jGraph = async (
-  data: Neo4jGraphInput,
-  session: Session
-) => {
+export const generateNeo4jGraph = async (data: SlogData, session: Session) => {
   const { vats, deliveries, syscalls, blocks } = data;
   const promises = data.promises || [];
 
@@ -293,7 +291,7 @@ export const processLogFile = async (
 
                   data.deliveries.push({
                     type: 'notify',
-                    state: state,
+                    state: state as State,
                     vatID,
                     time,
                     kpid: kd[1],

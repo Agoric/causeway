@@ -4,41 +4,61 @@ export type Vat = {
   time: number;
 };
 
-export type Block = { height: any; time: any; blockTime: any };
-export type Delivery =
-  | {
-      type: 'message';
-      method: string;
-      vatID: string;
-      time: number;
-      target: any;
-      result: any;
-      crankNum: any;
-      blockHeight: any;
-    }
-  | {
-      type: 'notify';
-      state: any;
-      vatID: string;
-      time: number;
-      kpid: any;
-      blockHeight: any;
-    };
+export type Block = { height: number; time: number; blockTime: number };
 
-export type Syscall = {
-  type: 'send';
-  method: string;
+export type State = 'fulfilled' | 'rejected' | 'pending';
+
+type DeliveryMessage = {
+  type: 'message';
+  crankNum: number;
   vatID: string;
+  target: string;
+  method: string;
+  result: string | null;
   time: number;
-  target: any;
-  result: any;
-  rejected?: any;
+  blockHeight: number;
 };
 
+type DeliveryNotify = {
+  type: 'notify';
+  vatID: string;
+  kpid: string;
+  state: State;
+  time: number;
+  blockHeight: number;
+};
+
+export type Delivery = DeliveryMessage | DeliveryNotify;
+
+type SyscallSend = {
+  type: 'send';
+  vatID: string;
+  target: string;
+  method: string;
+  result: string;
+  time: number;
+  blockHeight?: number;
+  rejected?: boolean;
+};
+
+type SyscallResolve = {
+  type: 'resolve';
+  vatID: string;
+  kpid: string;
+  rejected: boolean;
+  time: number;
+  blockHeight: number;
+};
+
+export type Syscall = SyscallSend | SyscallResolve;
+
 export type PromiseObj = {
-  kpid?: any;
-  creator?: any;
-  resolver?: any;
+  kpid: string;
+  state: State;
+  created: number;
+  creator: string;
+  resolved?: number;
+  resolver?: string;
 };
 
 export type Interaction = {
@@ -64,7 +84,7 @@ export type TimeRange = {
   max: number | null;
 };
 
-export type Neo4jGraphInput = {
+export type SlogData = {
   vats: Vat[];
   deliveries: Delivery[];
   syscalls: Syscall[];

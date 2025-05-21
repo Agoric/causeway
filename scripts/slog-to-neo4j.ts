@@ -1,8 +1,10 @@
-import neo4j from 'neo4j-driver';
-import fs from 'fs';
-import { processSlogEntries } from './processSlog.js';
+#!/usr/bin/env ts-node
 
-// Configuration management
+import neo4j, { Driver, Session } from 'neo4j-driver';
+import fs from 'fs';
+import { processSlogEntries, readJSONLines } from './slog-utils';
+import { SlogData } from '../app/types';
+
 const config = {
   neo4j: {
     uri: process.env.NEO4J_URI || 'neo4j://localhost:7687',
@@ -11,14 +13,19 @@ const config = {
   },
   batch: {
     size: parseInt(process.env.BATCH_SIZE || '10', 10),
-    retries: parseInt(process.env.BATCH_RETRIES || '3', 10)
+    retries: parseInt(process.env.BATCH_RETRIES || '3', 10),
   },
   logging: {
-    level: process.env.LOG_LEVEL || 'info'
-  }
+    level: process.env.LOG_LEVEL || 'info',
+  },
 };
 
 class Metrics {
+  processedBlocks: number;
+  processedDeliveries: number;
+  processedSyscalls: number;
+  failedBatches: number;
+  startTime: number;
   constructor() {
     this.reset();
   }
@@ -33,40 +40,47 @@ class Metrics {
 
   logStats() {
     const elapsed = (Date.now() - this.startTime) / 1000;
-    console.log(`\nProcessing Statistics:\n- Blocks processed: ${this.processedBlocks}\n- Deliveries processed: ${this.processedDeliveries}\n- Syscalls processed: ${this.processedSyscalls}\n- Failed batches: ${this.failedBatches}\n- Total time: ${elapsed.toFixed(2)}s`);
+    console.log(
+      `\nProcessing Statistics:\n- Blocks processed: ${
+        this.processedBlocks
+      }\n- Deliveries processed: ${
+        this.processedDeliveries
+      }\n- Syscalls processed: ${this.processedSyscalls}\n- Failed batches: ${
+        this.failedBatches
+      }\n- Total time: ${elapsed.toFixed(2)}s`
+    );
   }
 }
 
 const metrics = new Metrics();
 
-
 /**
  * Sets up database schema, constraints, and indexes
  */
-async function setupSchema(session) {
+async function setupSchema(session: Session) {
   const constraints = [
     `CREATE CONSTRAINT block_id IF NOT EXISTS
      FOR (b:Block) REQUIRE b.blockNum IS UNIQUE`,
-    
+
     `CREATE CONSTRAINT vat_id IF NOT EXISTS
      FOR (v:Vat) REQUIRE v.vatID IS UNIQUE`,
-    
+
     `CREATE CONSTRAINT syscall_id IF NOT EXISTS
      FOR (s:Syscall) REQUIRE (s.crankNum, s.syscallNum) IS NODE KEY`,
-    
+
     `CREATE CONSTRAINT promise_id IF NOT EXISTS
-     FOR (p:Promise) REQUIRE p.kpid IS UNIQUE`
+     FOR (p:Promise) REQUIRE p.kpid IS UNIQUE`,
   ];
 
   const indexes = [
     `CREATE INDEX delivery_id IF NOT EXISTS
      FOR (d:Delivery) ON (d.crankNum)`,
-    
+
     `CREATE INDEX delivery_time IF NOT EXISTS
      FOR (d:Delivery) ON (d.timestamp)`,
-    
+
     `CREATE INDEX object_ref IF NOT EXISTS
-     FOR (o:Object) ON (o.kref)`
+     FOR (o:Object) ON (o.kref)`,
   ];
 
   // for (const constraint of constraints) {
@@ -75,25 +89,6 @@ async function setupSchema(session) {
 
   for (const index of indexes) {
     await session.run(index);
-  }
-}
-
-
-
-/**
- * Read JSON lines from a stream
- * @param {AsyncIterable<Buffer>} data
- * @yields {Object} Parsed JSON objects
- */
-async function* readJSONLines(data) {
-  let buf = '';
-  for await (const chunk of data) {
-    buf += chunk;
-    for (let pos = buf.indexOf('\n'); pos >= 0; pos = buf.indexOf('\n')) {
-      const line = buf.slice(0, pos);
-      yield JSON.parse(line);
-      buf = buf.slice(pos + 1);
-    }
   }
 }
 
@@ -113,7 +108,7 @@ async function connectToNeo4j(retries = 3) {
     } catch (error) {
       if (attempt === retries) throw error;
       console.log(`Connection attempt ${attempt} failed, retrying...`);
-      await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
     }
   }
 }
@@ -123,7 +118,7 @@ async function connectToNeo4j(retries = 3) {
  * @param {Object} data - Processed slog data
  * @param {neo4j.Session} session - Active Neo4j session
  */
-async function generateNeo4jGraph(data, session) {
+async function generateNeo4jGraph(data: SlogData, session: Session) {
   const { vats, deliveries, syscalls, blocks } = data;
 
   // Create Vat nodes
@@ -160,7 +155,7 @@ async function generateNeo4jGraph(data, session) {
           vatID: msg.vatID,
           kpid: msg.kpid || null,
           call: `${msg.kpid}->${msg.state}()`,
-          blockHeight: msg.blockHeight || null
+          blockHeight: msg.blockHeight || null,
         }
       );
     }
@@ -178,7 +173,7 @@ async function generateNeo4jGraph(data, session) {
           target: msg.target || null,
           result: msg.result || null,
           call: `${msg.target}->${msg.method}()`,
-          blockHeight: msg.blockHeight || null
+          blockHeight: msg.blockHeight || null,
         }
       );
     }
@@ -217,37 +212,24 @@ async function generateNeo4jGraph(data, session) {
       }
     );
   }
-
 }
-
 
 /**
  * Process a single log file
  */
-async function processFileForNeo4j(slogfileName, driver) {
+async function processFileForNeo4j(slogfileName: string, driver: Driver) {
   console.log(`Processing ${slogfileName} for Neo4j`);
-  // let slog = fs.createReadStream(slogfileName);
-  // if (slogfileName.endsWith('.gz')) {
-  //   slog = slog.pipe(zlib.createGunzip());
-  // }
-
   const session = driver.session();
 
   let inputStream = fs.createReadStream(slogfileName, { encoding: 'utf-8' });
 
   const entries = readJSONLines(inputStream);
   const diagramData = await processSlogEntries(entries);
-  
+
   await generateNeo4jGraph(diagramData, session);
 
   console.log('Diagram data:', diagramData);
 }
-
-// async function runAnalysisQueries(session) {
-//   const result = await session.run('MATCH (v:Vat) RETURN count(v) AS vatCount');
-//   const count = result.records[0].get('vatCount');
-//   console.log(`Total Vats in database: ${count}`);
-// }
 
 async function run() {
   const [_node, _script, ...slogfileNames] = process.argv;
@@ -258,6 +240,9 @@ async function run() {
   }
 
   const driver = await connectToNeo4j(config.batch.retries);
+  if (!driver) {
+    throw new Error('Failed to connect to Neo4j. Driver is not defined.');
+  }
   let session;
 
   try {
@@ -291,7 +276,7 @@ process.on('unhandledRejection', (error) => {
   process.exit(1);
 });
 
-run().catch(error => {
+run().catch((error) => {
   console.error('Error in main execution:', error);
   process.exit(1);
 });
