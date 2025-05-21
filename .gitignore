@@ -1,0 +1,28 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Yarn
+.yarn/
+.pnp.*
+.yarnrc.yml
+
+# Build output
+dist/
+build/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+*.tsbuildinfo
+
+# IDE / Editor settings
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
