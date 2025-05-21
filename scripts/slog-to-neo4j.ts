@@ -1,4 +1,3 @@
-#!/usr/bin/env ts-node
 import { Driver, Session } from 'neo4j-driver';
 import fs from 'fs';
 import { processSlogEntries, readJSONLines } from './slog-utils';
@@ -6,14 +5,11 @@ import { SlogData } from '../app/types';
 import driver from '../lib/neo4j';
 
 class Metrics {
-  processedBlocks: number;
-  processedDeliveries: number;
-  processedSyscalls: number;
-  failedBatches: number;
-  startTime: number;
-  constructor() {
-    this.reset();
-  }
+  processedBlocks: number = 0;
+  processedDeliveries: number = 0;
+  processedSyscalls: number = 0;
+  failedBatches: number = 0;
+  startTime: number = Date.now();
 
   reset() {
     this.processedBlocks = 0;
@@ -26,13 +22,12 @@ class Metrics {
   logStats() {
     const elapsed = (Date.now() - this.startTime) / 1000;
     console.log(
-      `\nProcessing Statistics:\n- Blocks processed: ${
-        this.processedBlocks
-      }\n- Deliveries processed: ${
-        this.processedDeliveries
-      }\n- Syscalls processed: ${this.processedSyscalls}\n- Failed batches: ${
-        this.failedBatches
-      }\n- Total time: ${elapsed.toFixed(2)}s`,
+      `\nProcessing Statistics:
+- Blocks processed: ${this.processedBlocks}
+- Deliveries processed: ${this.processedDeliveries}
+- Syscalls processed: ${this.processedSyscalls}
+- Failed batches: ${this.failedBatches}
+- Total time: ${elapsed.toFixed(2)}s`,
     );
   }
 }
