@@ -27,7 +27,7 @@ const LogImporter = () => {
           e.target.files[0].size /
           1024 /
           1024
-        ).toFixed(2)} MB)`
+        ).toFixed(2)} MB)`,
       );
     }
   };
@@ -99,50 +99,50 @@ const LogImporter = () => {
   };
 
   return (
-    <div className='log-importer'>
+    <div className="log-importer">
       <h3>Import Log File to Neo4j</h3>
 
-      <div className='form-group'>
+      <div className="form-group">
         <label>Neo4j URI:</label>
         <input
-          type='text'
+          type="text"
           value={uri}
           onChange={(e) => setUri(e.target.value)}
-          placeholder='bolt://localhost:7687'
+          placeholder="bolt://localhost:7687"
         />
-        <small className='form-text'>
+        <small className="form-text">
           For local Neo4j use: bolt://localhost:7687
         </small>
       </div>
 
-      <div className='form-group'>
+      <div className="form-group">
         <label>Username:</label>
         <input
-          type='text'
+          type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder='neo4j'
+          placeholder="neo4j"
         />
       </div>
 
-      <div className='form-group'>
+      <div className="form-group">
         <label>Password:</label>
         <input
-          type='password'
+          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder='Your password'
+          placeholder="Your password"
         />
       </div>
 
-      <div className='form-group'>
+      <div className="form-group">
         <label>Log File (jsonl):</label>
         <input
-          type='file'
+          type="file"
           onChange={handleFileChange}
-          accept='.json,.jsonl,.log'
+          accept=".json,.jsonl,.log"
         />
-        <small className='form-text'>
+        <small className="form-text">
           Select a JSON Lines log file with one JSON object per line
         </small>
       </div>
@@ -155,13 +155,14 @@ const LogImporter = () => {
         <div
           className={`status-message ${
             status.includes('error') || status.includes('Error') ? 'error' : ''
-          }`}>
+          }`}
+        >
           {status}
         </div>
       )}
 
       {timeRange.min && (
-        <div className='time-range-info'>
+        <div className="time-range-info">
           <h4>Time Range Information</h4>
           <p>To view this data in the diagram tab, use these timestamps:</p>
           <ul>
@@ -182,7 +183,7 @@ const LogImporter = () => {
         </div>
       )}
 
-      <div className='troubleshooting'>
+      <div className="troubleshooting">
         <h4>Troubleshooting</h4>
         <ul>
           <li>Make sure your Neo4j database is running</li>

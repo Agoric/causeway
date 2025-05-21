@@ -82,28 +82,30 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
   };
 
   return (
-    <div className='mermaid-wrapper'>
+    <div className="mermaid-wrapper">
       {totalPages > 1 && (
-        <div className='pagination-controls'>
+        <div className="pagination-controls">
           <button
             onClick={prevPage}
             disabled={currentPage === 0}
-            className='pagination-button'>
+            className="pagination-button"
+          >
             ← Previous Page
           </button>
-          <span className='page-indicator'>
+          <span className="page-indicator">
             Page {currentPage + 1} of {totalPages}
           </span>
           <button
             onClick={nextPage}
             disabled={currentPage === totalPages - 1}
-            className='pagination-button'>
+            className="pagination-button"
+          >
             Next Page →
           </button>
         </div>
       )}
-      <div className='mermaid-container' ref={containerRef}>
-        <div ref={mermaidRef} className='mermaid-output' />
+      <div className="mermaid-container" ref={containerRef}>
+        <div ref={mermaidRef} className="mermaid-output" />
       </div>
     </div>
   );

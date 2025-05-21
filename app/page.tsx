@@ -18,17 +18,17 @@ const Page = () => {
   };
 
   return (
-    <div className='app'>
-      <div className='left-pane'>
+    <div className="app">
+      <div className="left-pane">
         <LeftPane onDiagramGenerated={handleDiagramGenerated} />
       </div>
-      <div className='canvas-pane'>
+      <div className="canvas-pane">
         <MermaidDiagram code={mermaidCode} />
         <textarea
-          className='mermaid-editor'
+          className="mermaid-editor"
           value={mermaidCode}
           onChange={(e) => setMermaidCode(e.target.value)}
-          placeholder='Enter Mermaid diagram code here'
+          placeholder="Enter Mermaid diagram code here"
         />
       </div>
     </div>

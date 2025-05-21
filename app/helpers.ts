@@ -63,7 +63,7 @@ export const generateNeo4jGraph = async (data: SlogData, session: Session) => {
       await session.run(
         `MERGE (v:Vat {vatID: $vatID})
          SET v.name = $name, v.createdAt = $time`,
-        { vatID: vat.vatID, name: vat.name, time: vat.time }
+        { vatID: vat.vatID, name: vat.name, time: vat.time },
       );
     } catch (error) {
       console.error('Error creating Vat node:', error);
@@ -76,7 +76,7 @@ export const generateNeo4jGraph = async (data: SlogData, session: Session) => {
       await session.run(
         `MERGE (b:Block {height: $height})
          SET b.time = $time, b.blockTime = $blockTime`,
-        { height: block.height, time: block.time, blockTime: block.blockTime }
+        { height: block.height, time: block.time, blockTime: block.blockTime },
       );
     } catch (error) {
       console.error('Error creating Block node:', error);
@@ -103,7 +103,7 @@ export const generateNeo4jGraph = async (data: SlogData, session: Session) => {
             kpid: msg.kpid || null,
             call: `${msg.kpid}->${msg.state}()`,
             blockHeight: msg.blockHeight || null,
-          }
+          },
         );
       } else if (msg.type === 'message') {
         await session.run(
@@ -120,7 +120,7 @@ export const generateNeo4jGraph = async (data: SlogData, session: Session) => {
             result: msg.result || null,
             call: `${msg.target || 'unknown'}->${msg.method || 'unknown'}()`,
             blockHeight: msg.blockHeight || null,
-          }
+          },
         );
       }
     } catch (error) {
@@ -144,7 +144,7 @@ export const generateNeo4jGraph = async (data: SlogData, session: Session) => {
             vatID: syscall.vatID,
             target: syscall.target || 'unknown',
             rejected: syscall.rejected || 'false',
-          }
+          },
         );
       }
     } catch (error) {
@@ -162,7 +162,7 @@ export const generateNeo4jGraph = async (data: SlogData, session: Session) => {
           kpid: promise.kpid || 'unknown',
           creator: promise.creator || 'unknown',
           resolver: promise.resolver || 'unknown',
-        }
+        },
       );
     } catch (error) {
       console.error('Error creating promise relationship:', error);
@@ -172,7 +172,7 @@ export const generateNeo4jGraph = async (data: SlogData, session: Session) => {
 
 export const processLogFile = async (
   file: File,
-  setProgress: React.Dispatch<React.SetStateAction<string>>
+  setProgress: React.Dispatch<React.SetStateAction<string>>,
 ) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -181,7 +181,7 @@ export const processLogFile = async (
       try {
         if (!event.target || !event.target.result) {
           reject(
-            new Error('Failed to read file: event.target or result is null')
+            new Error('Failed to read file: event.target or result is null'),
           );
           return;
         }
@@ -331,7 +331,7 @@ export const processLogFile = async (
           processedLines++;
           if (processedLines % 1000 === 0) {
             setProgress(
-              `Processed ${processedLines}/${totalLines} log entries...`
+              `Processed ${processedLines}/${totalLines} log entries...`,
             );
           }
         }
@@ -341,10 +341,10 @@ export const processLogFile = async (
 
         setProgress(`Log processing complete. 
           Found ${data.vats.length} vats, ${
-          data.deliveries.length
-        } deliveries, ${data.syscalls.length} syscalls, ${
-          data.blocks.length
-        } blocks
+            data.deliveries.length
+          } deliveries, ${data.syscalls.length} syscalls, ${
+            data.blocks.length
+          } blocks
           Time range: ${formattedMinTime} to ${formattedMaxTime}
           Timestamp range: ${
             minTime !== Number.MAX_VALUE ? minTime : 'N/A'
@@ -366,7 +366,7 @@ export const processLogFile = async (
 
 const findLabelForRect = (
   rect: SVGRectElement,
-  labels: NodeListOf<Element>
+  labels: NodeListOf<Element>,
 ) => {
   const rectX = parseFloat(rect.getAttribute('x') || '0');
   const rectY = parseFloat(rect.getAttribute('y') || '0');
@@ -409,7 +409,7 @@ const addParticipantTooltips = (svg: SVGSVGElement) => {
 
       const title = document.createElementNS(
         'http://www.w3.org/2000/svg',
-        'title'
+        'title',
       );
       title.textContent = tooltipText;
       rect.appendChild(title);
@@ -436,7 +436,7 @@ const addParticipantTooltips = (svg: SVGSVGElement) => {
 
       const title = document.createElementNS(
         'http://www.w3.org/2000/svg',
-        'title'
+        'title',
       );
       title.textContent = tooltipText;
       label.appendChild(title);
@@ -448,10 +448,10 @@ const addParticipantTooltips = (svg: SVGSVGElement) => {
 const extendLifelines = (
   svg: SVGSVGElement,
   originalHeight: number,
-  newHeight: number
+  newHeight: number,
 ) => {
   const lifelines = svg.querySelectorAll(
-    'line.messageLine1, line.loopLine, line[class*="actor-line"]'
+    'line.messageLine1, line.loopLine, line[class*="actor-line"]',
   );
 
   const actors = svg.querySelectorAll('rect.actor, .labelBox');
@@ -499,7 +499,7 @@ const extendLifelines = (
 
       const newLine = document.createElementNS(
         'http://www.w3.org/2000/svg',
-        'line'
+        'line',
       );
       newLine.setAttribute('x1', String(x));
       newLine.setAttribute('y1', String(y1));
@@ -545,7 +545,7 @@ export const renderDiagram = async ({
     if (svgElement) {
       const originalWidth = parseInt(svgElement.getAttribute('width') || '800');
       const originalHeight = parseInt(
-        svgElement.getAttribute('height') || '600'
+        svgElement.getAttribute('height') || '600',
       );
 
       const newWidth = Math.max(900, originalWidth * 1.2);
@@ -557,7 +557,7 @@ export const renderDiagram = async ({
 
       svgElement.setAttribute(
         'viewBox',
-        `0 0 ${originalWidth} ${originalHeight}`
+        `0 0 ${originalWidth} ${originalHeight}`,
       );
       svgElement.setAttribute('preserveAspectRatio', 'xMinYMin meet');
 
@@ -586,7 +586,7 @@ export const renderDiagram = async ({
 export const generateMermaidSequenceDiagram = (
   interactions: Interaction[],
   vats: Vat[],
-  maxInteractionsPerPage: number = 20
+  maxInteractionsPerPage: number = 20,
 ) => {
   if (!interactions || interactions.length === 0) {
     return `sequenceDiagram
@@ -605,7 +605,7 @@ export const generateMermaidSequenceDiagram = (
     const startIdx = i * maxInteractionsPerPage;
     const endIdx = Math.min(
       (i + 1) * maxInteractionsPerPage,
-      interactions.length
+      interactions.length,
     );
     pages.push(interactions.slice(startIdx, endIdx));
   }
@@ -613,7 +613,7 @@ export const generateMermaidSequenceDiagram = (
   const diagrams = pages.map((pageInteractions, pageIndex) => {
     const fromTime = new Date(
       pageInteractions[0].time *
-        (pageInteractions[0].time > 10000000000 ? 1 : 1000)
+        (pageInteractions[0].time > 10000000000 ? 1 : 1000),
     )
       .toISOString()
       .replace('T', ' ')
@@ -622,13 +622,13 @@ export const generateMermaidSequenceDiagram = (
       pageInteractions[pageInteractions.length - 1].time *
         (pageInteractions[pageInteractions.length - 1].time > 10000000000
           ? 1
-          : 1000)
+          : 1000),
     )
       .toISOString()
       .replace('T', ' ')
       .substring(0, 19);
 
-    let diagram = `sequenceDiagram\n`;
+    let diagram = 'sequenceDiagram\n';
     diagram += `    title Page ${
       pageIndex + 1
     }/${totalPages}: ${fromTime} to ${toTime}\n`;
@@ -640,7 +640,7 @@ export const generateMermaidSequenceDiagram = (
 
     // If this page has no interactions for a particular vat, add a note
     if (pageInteractions.length === 0) {
-      diagram += `    Note over System: No interactions on this page\n`;
+      diagram += '    Note over System: No interactions on this page\n';
     } else if (pageInteractions.length < 3) {
       // For pages with very few interactions, add a note to make the diagram more readable
       diagram += `    Note over System: Limited interactions on this page (${pageInteractions.length})\n`;
@@ -656,20 +656,20 @@ export const generateMermaidSequenceDiagram = (
 // Function to generate a single page diagram (no pagination)
 export const generateSinglePageDiagram = (
   interactions: Interaction[],
-  vats: Vat[]
+  vats: Vat[],
 ) => {
   let diagram = 'sequenceDiagram\n';
 
   if (interactions.length > 0) {
     const fromTime = new Date(
-      interactions[0].time * (interactions[0].time > 10000000000 ? 1 : 1000)
+      interactions[0].time * (interactions[0].time > 10000000000 ? 1 : 1000),
     )
       .toISOString()
       .replace('T', ' ')
       .substring(0, 19);
     const toTime = new Date(
       interactions[interactions.length - 1].time *
-        (interactions[interactions.length - 1].time > 10000000000 ? 1 : 1000)
+        (interactions[interactions.length - 1].time > 10000000000 ? 1 : 1000),
     )
       .toISOString()
       .replace('T', ' ')
@@ -687,7 +687,7 @@ export const generateSinglePageDiagram = (
 // Function to generate participant definitions
 export const generateParticipants = (
   interactions: Interaction[],
-  vats: Vat[]
+  vats: Vat[],
 ) => {
   let result = '';
 
@@ -697,7 +697,7 @@ export const generateParticipants = (
   });
 
   const hasSystemMessages = interactions.some(
-    (i) => i.sourceVat === 'system' || i.targetVat === 'system'
+    (i) => i.sourceVat === 'system' || i.targetVat === 'system',
   );
 
   Array.from(vatIds).forEach((vatId) => {
@@ -718,7 +718,7 @@ export const generateParticipants = (
   });
 
   if (hasSystemMessages) {
-    result += `    participant System as "System"\n`;
+    result += '    participant System as "System"\n';
   }
 
   return result;
@@ -727,7 +727,7 @@ export const generateParticipants = (
 // Function to generate the interaction lines
 export const generateInteractions = (
   interactions: Interaction[],
-  vats: Vat[]
+  vats: Vat[],
 ) => {
   let result = '';
 
@@ -810,7 +810,7 @@ export const generateInteractions = (
       const significantGap = timeGap > 30;
       if (significantGap) {
         result += `    Note over System: Time gap (${Math.floor(
-          timeGap
+          timeGap,
         )} seconds)\n`;
       }
     }

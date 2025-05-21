@@ -15,7 +15,7 @@ const getDriver = () => {
         encrypted:
           NEO4J_URI.includes('neo4j+s') || NEO4J_URI.includes('bolt+s'),
         disableLosslessIntegers: true,
-      }
+      },
     );
   }
   return driverInstance;

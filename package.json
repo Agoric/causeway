@@ -10,6 +10,14 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
+  "prettier": {
+    "singleQuote": true,
+    "semi": true,
+    "printWidth": 80,
+    "tabWidth": 2,
+    "bracketSpacing": true,
+    "arrowParens": "always"
+  },
   "scripts": {
     "start:chain": "bash scripts/init.sh && docker compose up -d",
     "slogs:import": "vite-node scripts/slog-to-neo4j.ts scripts/a3p.slog",
@@ -17,14 +25,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "prettier --check .",
+    "lint:fix": "prettier --write ."
   },
   "packageManager": "yarn@4.9.1+sha512.f95ce356460e05be48d66401c1ae64ef84d163dd689964962c6888a9810865e39097a5e9de748876c2e0bf89b232d583c33982773e9903ae7a76257270986538",
   "devDependencies": {
     "@types/node": "22.15.21",
     "@types/react": "19.1.4",
-    "eslint": "^9",
-    "eslint-config-next": "15.3.2",
+    "prettier": "^3.5.3",
     "typescript": "5.8.3",
     "vite-node": "^3.1.4"
   }

@@ -18,7 +18,7 @@ export const getVats = async (): Promise<Vat[]> => {
 
 export const getInteractions = async (
   startTime: number,
-  endTime: number
+  endTime: number,
 ): Promise<Interactions> => {
   const url = new URL(`${window.location.origin}${API_BASE}/interactions`);
   url.searchParams.append('startTime', startTime.toString());
@@ -34,22 +34,15 @@ export const getInteractions = async (
 };
 
 export const sanitizeInteractions = (
-  interactions: Interaction[]
+  interactions: Interaction[],
 ): Interaction[] => {
   return interactions.map((interaction) => {
     if (interaction.method) {
       interaction.method = String(interaction.method).replace(
         /[^\w\s\-.,;:()]/g,
-        '_'
+        '_',
       );
     }
     return interaction;
   });
-};
-
-export default {
-  checkHealth,
-  getVats,
-  getInteractions,
-  sanitizeInteractions,
 };

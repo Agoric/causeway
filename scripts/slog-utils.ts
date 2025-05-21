@@ -19,7 +19,7 @@ const extractSmallcaps = (methargs_smallcaps: {
 };
 
 export const readJSONLines = async function* (
-  data: AsyncIterable<Buffer>
+  data: AsyncIterable<Buffer>,
 ): AsyncGenerator<Record<string, any>> {
   let buf = '';
   for await (const chunk of data) {
@@ -33,7 +33,7 @@ export const readJSONLines = async function* (
 };
 
 export const processSlogEntries = async (
-  entries: AsyncIterable<Record<string, any>>
+  entries: AsyncIterable<Record<string, any>>,
 ): Promise<SlogData> => {
   // Track vat information
   const vatInfo = new Map();

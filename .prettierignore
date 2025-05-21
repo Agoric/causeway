@@ -1,0 +1,25 @@
+# Ignore build output
+dist/
+build/
+
+# Ignore dependencies
+node_modules/
+
+# Ignore Next.js output
+.next/
+
+# Ignore all minified files
+*.min.js
+
+# Ignore lock files
+package-lock.json
+yarn.lock
+
+# Ignore generated types
+types/generated/
+
+public/
+
+# Ignore slog files
+scripts/slogs.json
+scripts/a3p.slog

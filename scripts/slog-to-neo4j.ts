@@ -32,7 +32,7 @@ class Metrics {
         this.processedDeliveries
       }\n- Syscalls processed: ${this.processedSyscalls}\n- Failed batches: ${
         this.failedBatches
-      }\n- Total time: ${elapsed.toFixed(2)}s`
+      }\n- Total time: ${elapsed.toFixed(2)}s`,
     );
   }
 }
@@ -67,7 +67,7 @@ const generateNeo4jGraph = async (data: SlogData, session: Session) => {
     await session.run(
       `MERGE (v:Vat {vatID: $vatID})
        SET v.name = $name, v.createdAt = $time`,
-      { vatID: vat.vatID, name: vat.name, time: vat.time }
+      { vatID: vat.vatID, name: vat.name, time: vat.time },
     );
   }
 
@@ -76,7 +76,7 @@ const generateNeo4jGraph = async (data: SlogData, session: Session) => {
     await session.run(
       `MERGE (b:Block {height: $height})
        SET b.time = $time, b.blockTime = $blockTime`,
-      { height: block.height, time: block.time, blockTime: block.blockTime }
+      { height: block.height, time: block.time, blockTime: block.blockTime },
     );
   }
 
@@ -97,7 +97,7 @@ const generateNeo4jGraph = async (data: SlogData, session: Session) => {
           kpid: msg.kpid || null,
           call: `${msg.kpid}->${msg.state}()`,
           blockHeight: msg.blockHeight || null,
-        }
+        },
       );
     }
     if (msg.type === 'message') {
@@ -115,7 +115,7 @@ const generateNeo4jGraph = async (data: SlogData, session: Session) => {
           result: msg.result || null,
           call: `${msg.target}->${msg.method}()`,
           blockHeight: msg.blockHeight || null,
-        }
+        },
       );
     }
   }
@@ -135,7 +135,7 @@ const generateNeo4jGraph = async (data: SlogData, session: Session) => {
           vatID: syscall.vatID,
           target: syscall.target || 'unknown',
           rejected: syscall.rejected || 'false',
-        }
+        },
       );
     }
   }
@@ -150,7 +150,7 @@ const generateNeo4jGraph = async (data: SlogData, session: Session) => {
         kpid: promise.kpid || 'unknown',
         creator: promise.creator || 'unknown',
         resolver: promise.resolver || 'unknown',
-      }
+      },
     );
   }
 };

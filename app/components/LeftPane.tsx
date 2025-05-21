@@ -8,21 +8,23 @@ type Props = {
 const LeftPane = ({ onDiagramGenerated }: Props) => {
   const [activeTab, setActiveTab] = useState<'view' | 'import'>('view');
   return (
-    <div className='left-pane-content'>
-      <div className='tabs'>
+    <div className="left-pane-content">
+      <div className="tabs">
         <button
           className={`tab ${activeTab === 'view' ? 'active' : ''}`}
-          onClick={() => setActiveTab('view')}>
+          onClick={() => setActiveTab('view')}
+        >
           View Diagram
         </button>
         <button
           className={`tab ${activeTab === 'import' ? 'active' : ''}`}
-          onClick={() => setActiveTab('import')}>
+          onClick={() => setActiveTab('import')}
+        >
           Import Logs
         </button>
       </div>
 
-      <div className='tab-content'>
+      <div className="tab-content">
         {activeTab === 'view' ? (
           <Neo4jSequenceDiagram onDiagramGenerated={onDiagramGenerated} />
         ) : (

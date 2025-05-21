@@ -53,23 +53,23 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
 
       // Generate the Mermaid diagram with pagination
       setStatus(
-        `Found ${processedInteractions.length} interactions. Generating diagram...`
+        `Found ${processedInteractions.length} interactions. Generating diagram...`,
       );
       const diagram = generateMermaidSequenceDiagram(
         processedInteractions,
         vats,
-        interactionsPerPage
+        interactionsPerPage,
       );
       onDiagramGenerated(diagram);
 
       // Calculate pages for status message
       const pageCount = Math.ceil(
-        processedInteractions.length / interactionsPerPage
+        processedInteractions.length / interactionsPerPage,
       );
       const pagesInfo = pageCount > 1 ? ` Split into ${pageCount} pages.` : '';
 
       setStatus(
-        `Diagram generated successfully with ${processedInteractions.length} interactions between ${vats.length} vats.${pagesInfo}`
+        `Diagram generated successfully with ${processedInteractions.length} interactions between ${vats.length} vats.${pagesInfo}`,
       );
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -80,76 +80,79 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
   };
 
   return (
-    <div className='neo4j-form'>
+    <div className="neo4j-form">
       <h3>Generate Sequence Diagram</h3>
 
       {connectionStatus && (
         <div
           className={`connection-status ${
             connectionStatus.includes('Warning') ? 'warning' : 'success'
-          }`}>
-          <div className='status-indicator'></div>
+          }`}
+        >
+          <div className="status-indicator"></div>
           <span>{connectionStatus}</span>
         </div>
       )}
 
-      <div className='form-group'>
+      <div className="form-group">
         <label>Start Time (Unix timestamp):</label>
-        <div className='input-with-actions'>
+        <div className="input-with-actions">
           <input
-            type='text'
+            type="text"
             value={startTime}
             onChange={(e) => setStartTime(e.target.value)}
-            placeholder='1629570627.218393'
+            placeholder="1629570627.218393"
           />
           <button
-            className='input-action-button'
+            className="input-action-button"
             onClick={() => setStartTime('1629570627.218393')}
-            title='Reset to default start time'>
+            title="Reset to default start time"
+          >
             Reset
           </button>
         </div>
-        <small className='form-text'>
+        <small className="form-text">
           Default start time is pre-filled for convenience
         </small>
       </div>
 
-      <div className='form-group'>
+      <div className="form-group">
         <label>End Time (Unix timestamp):</label>
-        <div className='input-with-actions'>
+        <div className="input-with-actions">
           <input
-            type='text'
+            type="text"
             value={endTime}
             onChange={(e) => setEndTime(e.target.value)}
-            placeholder='1829570627.218393'
+            placeholder="1829570627.218393"
           />
           <button
-            className='input-action-button'
+            className="input-action-button"
             onClick={() => setEndTime('1829570627.218393')}
-            title='Reset to default end time'>
+            title="Reset to default end time"
+          >
             Reset
           </button>
         </div>
-        <small className='form-text'>
+        <small className="form-text">
           Default end time is pre-filled for convenience
         </small>
       </div>
 
-      <div className='form-group'>
+      <div className="form-group">
         <label>Interactions Per Page:</label>
         <input
-          type='number'
-          min='5'
-          max='50'
+          type="number"
+          min="5"
+          max="50"
           value={interactionsPerPage}
           onChange={(e) =>
             setInteractionsPerPage(
-              Math.max(5, Math.min(50, parseInt(e.target.value) || 20))
+              Math.max(5, Math.min(50, parseInt(e.target.value) || 20)),
             )
           }
-          placeholder='20'
+          placeholder="20"
         />
-        <small className='form-text'>
+        <small className="form-text">
           Number of interactions to show per page (5-50). Use lower values for
           better readability.
         </small>
@@ -163,12 +166,13 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
         <div
           className={`status-message ${
             status.includes('error') || status.includes('Error') ? 'error' : ''
-          }`}>
+          }`}
+        >
           {status}
         </div>
       )}
 
-      <div className='troubleshooting'>
+      <div className="troubleshooting">
         <h4>Troubleshooting</h4>
         <ul>
           <li>
