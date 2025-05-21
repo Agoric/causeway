@@ -14,16 +14,16 @@
   yarn install
   ```
 
-- Import slogs to neo4j
+- Import a3p slogs in `scripts/a3p.slog` to neo4j:
+
+  ```bash
+  yarn slogs:import
+  ```
+
+  Import `scripts/slogs.json` to neo4j
 
   ```bash
   yarn slogs:import-static
-  ```
-
-  Import a3p slogs to neo4j:
-
-  ```
-  yarn slogs:import
   ```
 
 - Start the Next.js development server
