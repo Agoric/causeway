@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import api from '../services/api';
+import {
+  checkHealth,
+  getVats,
+  getInteractions,
+  sanitizeInteractions,
+} from '../services/api';
 import { generateMermaidSequenceDiagram, parseTimestamp } from '../helpers';
 
 type Props = {
@@ -18,7 +23,7 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
     const checkApiHealth = async () => {
       try {
         // TODO
-        await api.checkHealth();
+        await checkHealth();
         setConnectionStatus('API server connected to Neo4j database');
       } catch (error) {
         console.error(error);
@@ -42,14 +47,14 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
 
       // Fetch vats and interactions in parallel
       const [vats, interactionsData] = await Promise.all([
-        api.getVats(),
-        api.getInteractions(startTimestamp, endTimestamp),
+        getVats(),
+        getInteractions(startTimestamp, endTimestamp),
       ]);
 
       const allInteractions = interactionsData.interactions;
 
       // Process and sanitize interactions
-      const processedInteractions = api.sanitizeInteractions(allInteractions);
+      const processedInteractions = sanitizeInteractions(allInteractions);
 
       // Generate the Mermaid diagram with pagination
       setStatus(
