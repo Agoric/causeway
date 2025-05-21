@@ -450,8 +450,8 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }) => {
             Times in the database are Unix timestamps (e.g., 1629570627.218393)
           </li>
           <li>
-            Try adjusting the "Interactions Per Page" value to break diagrams
-            into manageable pages
+            Try adjusting the &quot;Interactions Per Page&quot; value to break
+            diagrams into manageable pages
           </li>
           <li>If you encounter errors, check the server logs for details</li>
         </ul>

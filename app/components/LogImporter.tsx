@@ -194,8 +194,8 @@ const LogImporter = () => {
             The log file should be in JSONL format (one JSON object per line)
           </li>
           <li>
-            After importing, switch to the "View Diagram" tab to visualize the
-            data
+            After importing, switch to the &quot;View Diagram&quot; tab to
+            visualize the data
           </li>
         </ul>
       </div>
