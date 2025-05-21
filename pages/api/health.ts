@@ -1,4 +1,4 @@
-import driver from '../../app/lib/neo4j';
+import driver from '../../lib/neo4j';
 
 const handler = async (_req, res) => {
   try {

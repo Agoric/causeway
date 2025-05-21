@@ -4,12 +4,9 @@ let driverInstance;
 
 const getDriver = () => {
   if (!driverInstance) {
-    const { NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD } = process.env;
-    if (!NEO4J_URI || !NEO4J_USER || !NEO4J_PASSWORD) {
-      throw new Error(
-        'Missing Neo4j connection parameters in environment variables'
-      );
-    }
+    const NEO4J_URI = process.env.NEO4J_URI || 'neo4j://localhost:7687';
+    const NEO4J_USER = process.env.NEO4J_USER || 'neo4j';
+    const NEO4J_PASSWORD = process.env.NEO4J_PASSWORD || 'secretpassword';
 
     driverInstance = neo4j.driver(
       NEO4J_URI,

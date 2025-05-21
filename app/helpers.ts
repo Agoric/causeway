@@ -1,5 +1,5 @@
 import { Session, Driver } from 'neo4j-driver';
-import neo4j from './lib/neo4j';
+import neo4j from '../lib/neo4j';
 import mermaid from 'mermaid';
 
 export const createNeo4jDriver = async (
