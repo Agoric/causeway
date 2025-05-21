@@ -1,25 +1,27 @@
 ## Local setup
 
-1. Start neo4j server:
+- To start the Agoric local chain and a Neo4j server in the background, use the following command:
 
-```bash
-yarn start:neo4j
-```
+  ```bash
+  yarn start:chain
+  ```
 
-2. Install project dependencies:
+  Slogs are dynamically appended to `scripts/a3p.slog` for easy access outside the container.
 
-```bash
-yarn install
-```
+- Install project dependencies:
 
-3. Import slogs to neo4j
+  ```bash
+  yarn install
+  ```
 
-```bash
-yarn slogs:import-static
-```
+- Import slogs to neo4j
 
-4. Start the Next.js development server
+  ```bash
+  yarn slogs:import-static
+  ```
 
-```bash
-yarn dev
-```
+- Start the Next.js development server
+
+  ```bash
+  yarn dev
+  ```

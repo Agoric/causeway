@@ -24,6 +24,7 @@ yarn-error.log*
 # IDE / Editor settings
 .vscode/
 
-# OS files
+# Random files
 .DS_Store
 Thumbs.db
+a3p.slog
