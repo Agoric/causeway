@@ -1,4 +1,6 @@
-const handler = async (req, res) => {
+import type { NextApiRequest, NextApiResponse } from 'next';
+
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === 'POST') {
     // Placeholder response until actual logic is implemented
     res.status(200).json({

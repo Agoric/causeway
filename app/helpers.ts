@@ -1,22 +1,18 @@
 import { Session, Driver } from 'neo4j-driver';
-import neo4j from '../lib/neo4j';
+import driver from '../lib/neo4j';
 import mermaid from 'mermaid';
+import {
+  Block,
+  Delivery,
+  Interaction,
+  Neo4jGraphInput,
+  PromiseObj,
+  Syscall,
+  Vat,
+} from './types';
 
-export const createNeo4jDriver = async (
-  uri: string,
-  username: string,
-  password: string
-): Promise<Driver> => {
+export const createNeo4jDriver = async (): Promise<Driver> => {
   try {
-    const driver: Driver = neo4j.driver(
-      uri,
-      neo4j.auth.basic(username, password),
-      {
-        encrypted: uri.includes('neo4j+s') || uri.includes('bolt+s'),
-        disableLosslessIntegers: true,
-      }
-    );
-
     await driver.verifyConnectivity();
     return driver;
   } catch (error) {
@@ -37,6 +33,13 @@ export const createNeo4jDriver = async (
   }
 };
 
+// Convert string timestamp (1729570627.218393) to numeric timestamp
+export const parseTimestamp = (timestampStr: string) => {
+  if (!timestampStr) return null;
+  const num = parseFloat(timestampStr);
+  return isNaN(num) ? null : num;
+};
+
 export const formatUnixTimestamp = (timestamp: number) => {
   if (!timestamp) return 'N/A';
   try {
@@ -49,7 +52,10 @@ export const formatUnixTimestamp = (timestamp: number) => {
   }
 };
 
-export const generateNeo4jGraph = async (data: any, session: Session) => {
+export const generateNeo4jGraph = async (
+  data: Neo4jGraphInput,
+  session: Session
+) => {
   const { vats, deliveries, syscalls, blocks } = data;
   const promises = data.promises || [];
 
@@ -166,7 +172,10 @@ export const generateNeo4jGraph = async (data: any, session: Session) => {
   }
 };
 
-export const processLogFile = async (file, setProgress) => {
+export const processLogFile = async (
+  file: File,
+  setProgress: React.Dispatch<React.SetStateAction<string>>
+) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -182,41 +191,6 @@ export const processLogFile = async (file, setProgress) => {
         const totalLines = lines.length;
 
         setProgress(`Processing ${totalLines} log entries...`);
-
-        type Vat = { vatID: any; name: any; time: any };
-        type Block = { height: any; time: any; blockTime: any };
-        type Delivery =
-          | {
-              type: 'message';
-              method: any;
-              vatID: any;
-              time: any;
-              target: any;
-              result: any;
-              crankNum: any;
-              blockHeight: any;
-            }
-          | {
-              type: 'notify';
-              state: any;
-              vatID: any;
-              time: any;
-              kpid: any;
-              blockHeight: any;
-            };
-        type Syscall = {
-          type: 'send';
-          method: any;
-          vatID: any;
-          time: any;
-          target: any;
-          result: any;
-        };
-        type PromiseObj = {
-          kpid?: any;
-          creator?: any;
-          resolver?: any;
-        };
 
         const data: {
           vats: Vat[];
@@ -392,14 +366,17 @@ export const processLogFile = async (file, setProgress) => {
   });
 };
 
-const findLabelForRect = (rect, labels) => {
-  const rectX = parseFloat(rect.getAttribute('x'));
-  const rectY = parseFloat(rect.getAttribute('y'));
-  const rectWidth = parseFloat(rect.getAttribute('width'));
+const findLabelForRect = (
+  rect: SVGRectElement,
+  labels: NodeListOf<Element>
+) => {
+  const rectX = parseFloat(rect.getAttribute('x') || '0');
+  const rectY = parseFloat(rect.getAttribute('y') || '0');
+  const rectWidth = parseFloat(rect.getAttribute('width') || '0');
 
   for (const label of labels) {
-    const labelX = parseFloat(label.getAttribute('x'));
-    const labelY = parseFloat(label.getAttribute('y'));
+    const labelX = parseFloat(label.getAttribute('x') || '0');
+    const labelY = parseFloat(label.getAttribute('y') || '0');
 
     if (
       Math.abs(labelX - (rectX + rectWidth / 2)) < rectWidth / 2 + 5 &&
@@ -412,13 +389,13 @@ const findLabelForRect = (rect, labels) => {
   return null;
 };
 
-const addParticipantTooltips = (svg) => {
+const addParticipantTooltips = (svg: SVGSVGElement) => {
   const actorRects = svg.querySelectorAll('rect.actor, .labelBox');
   const actorLabels = svg.querySelectorAll('.actor, .labelText');
 
-  actorRects.forEach((rect) => {
+  actorRects.forEach((rect: SVGRectElement) => {
     const textLabel = findLabelForRect(rect, actorLabels);
-    if (textLabel) {
+    if (textLabel && textLabel.textContent) {
       const displayedName = textLabel.textContent.trim();
       let tooltipText;
 
@@ -444,31 +421,37 @@ const addParticipantTooltips = (svg) => {
   });
 
   actorLabels.forEach((label) => {
-    const displayedName = label.textContent.trim();
-    let tooltipText;
+    if (label && label.textContent) {
+      const displayedName = label.textContent.trim();
+      let tooltipText;
 
-    if (displayedName.includes('System')) {
-      tooltipText = 'System: The Neo4j system participant';
-    } else {
-      let vatName = displayedName;
+      if (displayedName.includes('System')) {
+        tooltipText = 'System: The Neo4j system participant';
+      } else {
+        let vatName = displayedName;
 
-      if (displayedName.endsWith('...')) {
-        vatName = displayedName.replace('...', '');
+        if (displayedName.endsWith('...')) {
+          vatName = displayedName.replace('...', '');
+        }
+        tooltipText = `Vat: ${vatName}`;
       }
-      tooltipText = `Vat: ${vatName}`;
-    }
 
-    const title = document.createElementNS(
-      'http://www.w3.org/2000/svg',
-      'title'
-    );
-    title.textContent = tooltipText;
-    label.appendChild(title);
-    label.classList.add('has-tooltip');
+      const title = document.createElementNS(
+        'http://www.w3.org/2000/svg',
+        'title'
+      );
+      title.textContent = tooltipText;
+      label.appendChild(title);
+      label.classList.add('has-tooltip');
+    }
   });
 };
 
-const extendLifelines = (svg, originalHeight, newHeight) => {
+const extendLifelines = (
+  svg: SVGSVGElement,
+  originalHeight: number,
+  newHeight: number
+) => {
   const lifelines = svg.querySelectorAll(
     'line.messageLine1, line.loopLine, line[class*="actor-line"]'
   );
@@ -478,8 +461,8 @@ const extendLifelines = (svg, originalHeight, newHeight) => {
 
   lifelines.forEach((line) => {
     if (line.getAttribute('x1') === line.getAttribute('x2')) {
-      const currentY2 = parseFloat(line.getAttribute('y2'));
-      line.setAttribute('y2', currentY2 * extensionFactor);
+      const currentY2 = parseFloat(line.getAttribute('y2') || '0');
+      line.setAttribute('y2', String(currentY2 * extensionFactor));
     }
   });
 
@@ -509,12 +492,12 @@ const extendLifelines = (svg, originalHeight, newHeight) => {
     const actorBoxes = svg.querySelectorAll('.actor-man, .actor-box');
     actorBoxes.forEach((box) => {
       const x =
-        parseFloat(box.getAttribute('x')) +
-        parseFloat(box.getAttribute('width')) / 2;
+        parseFloat(box.getAttribute('x') || '0') +
+        parseFloat(box.getAttribute('width') || '0') / 2;
 
       const y1 =
-        parseFloat(box.getAttribute('y')) +
-        parseFloat(box.getAttribute('height'));
+        parseFloat(box.getAttribute('y') || '0') +
+        parseFloat(box.getAttribute('height') || '0');
 
       const newLine = document.createElementNS(
         'http://www.w3.org/2000/svg',
@@ -534,7 +517,20 @@ const extendLifelines = (svg, originalHeight, newHeight) => {
   }
 };
 
-export const renderDiagram = async ({ mermaidRef, pages, currentPage }) => {
+type RenderDiagramArgs = {
+  mermaidRef: React.RefObject<HTMLDivElement> | null;
+  pages: string[];
+  currentPage: number;
+};
+
+export const renderDiagram = async ({
+  mermaidRef,
+  pages,
+  currentPage,
+}: RenderDiagramArgs) => {
+  if (pages.length === 0) return;
+  if (!mermaidRef) return;
+
   try {
     mermaidRef.current.innerHTML = '';
 
@@ -549,8 +545,10 @@ export const renderDiagram = async ({ mermaidRef, pages, currentPage }) => {
 
     const svgElement = mermaidRef.current.querySelector('svg');
     if (svgElement) {
-      const originalWidth = parseInt(svgElement.getAttribute('width') || 800);
-      const originalHeight = parseInt(svgElement.getAttribute('height') || 600);
+      const originalWidth = parseInt(svgElement.getAttribute('width') || '800');
+      const originalHeight = parseInt(
+        svgElement.getAttribute('height') || '600'
+      );
 
       const newWidth = Math.max(900, originalWidth * 1.2);
       const newHeight = Math.max(800, originalHeight * 1.5);
@@ -569,7 +567,7 @@ export const renderDiagram = async ({ mermaidRef, pages, currentPage }) => {
 
       const textElements = svgElement.querySelectorAll('text');
       textElements.forEach((text) => {
-        const currentSize = parseFloat(text.getAttribute('font-size') || 12);
+        const currentSize = parseFloat(text.getAttribute('font-size') || '12');
         text.setAttribute('font-size', `${currentSize * 1.2}`);
       });
 
@@ -585,4 +583,240 @@ export const renderDiagram = async ({ mermaidRef, pages, currentPage }) => {
             </div>
           `;
   }
+};
+
+export const generateMermaidSequenceDiagram = (
+  interactions: Interaction[],
+  vats: Vat[],
+  maxInteractionsPerPage: number = 20
+) => {
+  if (!interactions || interactions.length === 0) {
+    return `sequenceDiagram
+    Note over System: No interactions found in the selected time range`;
+  }
+
+  interactions.sort((a, b) => a.time - b.time);
+  const totalPages = Math.ceil(interactions.length / maxInteractionsPerPage);
+
+  if (totalPages <= 1) {
+    return generateSinglePageDiagram(interactions, vats);
+  }
+
+  const pages: Interaction[][] = [];
+  for (let i = 0; i < totalPages; i++) {
+    const startIdx = i * maxInteractionsPerPage;
+    const endIdx = Math.min(
+      (i + 1) * maxInteractionsPerPage,
+      interactions.length
+    );
+    pages.push(interactions.slice(startIdx, endIdx));
+  }
+
+  const diagrams = pages.map((pageInteractions, pageIndex) => {
+    const fromTime = new Date(
+      pageInteractions[0].time *
+        (pageInteractions[0].time > 10000000000 ? 1 : 1000)
+    )
+      .toISOString()
+      .replace('T', ' ')
+      .substring(0, 19);
+    const toTime = new Date(
+      pageInteractions[pageInteractions.length - 1].time *
+        (pageInteractions[pageInteractions.length - 1].time > 10000000000
+          ? 1
+          : 1000)
+    )
+      .toISOString()
+      .replace('T', ' ')
+      .substring(0, 19);
+
+    let diagram = `sequenceDiagram\n`;
+    diagram += `    title Page ${
+      pageIndex + 1
+    }/${totalPages}: ${fromTime} to ${toTime}\n`;
+
+    diagram += generateParticipants(interactions, vats);
+
+    // But only add the interactions for this specific page
+    diagram += generateInteractions(pageInteractions, vats);
+
+    // If this page has no interactions for a particular vat, add a note
+    if (pageInteractions.length === 0) {
+      diagram += `    Note over System: No interactions on this page\n`;
+    } else if (pageInteractions.length < 3) {
+      // For pages with very few interactions, add a note to make the diagram more readable
+      diagram += `    Note over System: Limited interactions on this page (${pageInteractions.length})\n`;
+    }
+
+    return diagram;
+  });
+
+  // Join with a special delimiter that we'll use to split the diagrams later
+  return diagrams.join('\n%%DIAGRAM_PAGE_BREAK%%\n');
+};
+
+// Function to generate a single page diagram (no pagination)
+export const generateSinglePageDiagram = (
+  interactions: Interaction[],
+  vats: Vat[]
+) => {
+  let diagram = 'sequenceDiagram\n';
+
+  if (interactions.length > 0) {
+    const fromTime = new Date(
+      interactions[0].time * (interactions[0].time > 10000000000 ? 1 : 1000)
+    )
+      .toISOString()
+      .replace('T', ' ')
+      .substring(0, 19);
+    const toTime = new Date(
+      interactions[interactions.length - 1].time *
+        (interactions[interactions.length - 1].time > 10000000000 ? 1 : 1000)
+    )
+      .toISOString()
+      .replace('T', ' ')
+      .substring(0, 19);
+
+    diagram += `    title Sequence Diagram: ${fromTime} to ${toTime}\n`;
+  }
+
+  diagram += generateParticipants(interactions, vats);
+  diagram += generateInteractions(interactions, vats);
+
+  return diagram;
+};
+
+// Function to generate participant definitions
+export const generateParticipants = (
+  interactions: Interaction[],
+  vats: Vat[]
+) => {
+  let result = '';
+
+  const vatIds = new Set();
+  vats.forEach((vat) => {
+    vatIds.add(vat.vatID);
+  });
+
+  const hasSystemMessages = interactions.some(
+    (i) => i.sourceVat === 'system' || i.targetVat === 'system'
+  );
+
+  Array.from(vatIds).forEach((vatId) => {
+    // Sanitize vatId for Mermaid
+    const safeVatId = `Vat_${String(vatId).replace(/[^\w]/g, '_')}`;
+
+    const vat = vats.find((v) => v.vatID === vatId);
+    const displayName: string = vat?.name || String(vatId);
+
+    const truncatedName =
+      displayName.length > 15
+        ? displayName.substring(0, 15) + '...'
+        : displayName;
+
+    // Add all participants - Mermaid doesn't support conditional styling through syntax
+    // Instead, we'll just include all participants consistently
+    result += `    participant ${safeVatId} as "${truncatedName}"\n`;
+  });
+
+  if (hasSystemMessages) {
+    result += `    participant System as "System"\n`;
+  }
+
+  return result;
+};
+
+// Function to generate the interaction lines
+export const generateInteractions = (
+  interactions: Interaction[],
+  vats: Vat[]
+) => {
+  let result = '';
+
+  const vatIds = new Set();
+  vats.forEach((vat) => {
+    vatIds.add(vat.vatID);
+  });
+
+  interactions.forEach((interaction, index) => {
+    const { sourceVat, targetVat, method, type, time } = interaction;
+
+    if (!sourceVat || !targetVat) return;
+
+    if (type === 'syscall' && vatIds.has(sourceVat)) {
+      if (!vatIds.has(targetVat) && targetVat !== 'system') {
+        const externalName = targetVat.startsWith('target:')
+          ? targetVat.substring(7)
+          : targetVat;
+
+        const safeSourceVat = `Vat_${sourceVat.replace(/[^\w]/g, '_')}`;
+
+        const methodDisplay =
+          method && method.length > 15
+            ? `${method.substring(0, 15)}... (${externalName.substring(0, 15)})`
+            : `${method || 'unknown'} (${externalName.substring(0, 15)})`;
+
+        result += `    ${safeSourceVat}-x>External: ${methodDisplay}\n`;
+      } else if (vatIds.has(targetVat)) {
+        const safeSourceVat = `Vat_${sourceVat.replace(/[^\w]/g, '_')}`;
+        const safeTargetVat = `Vat_${targetVat.replace(/[^\w]/g, '_')}`;
+
+        const methodDisplay =
+          method && method.length > 20
+            ? `${method.substring(0, 20)}...`
+            : method || 'unknown';
+
+        result += `    ${safeSourceVat}->>>${safeTargetVat}: ${methodDisplay}\n`;
+      }
+    }
+    // Handle normal vat-to-vat or system-to-vat interactions
+    else {
+      let safeSourceVat;
+      if (sourceVat === 'system') {
+        safeSourceVat = 'System';
+      } else if (vatIds.has(sourceVat)) {
+        safeSourceVat = `Vat_${sourceVat.replace(/[^\w]/g, '_')}`;
+      } else {
+        return;
+      }
+
+      let safeTargetVat;
+      if (targetVat === 'system') {
+        safeTargetVat = 'System';
+      } else if (vatIds.has(targetVat)) {
+        safeTargetVat = `Vat_${targetVat.replace(/[^\w]/g, '_')}`;
+      } else {
+        return;
+      }
+
+      let arrow = '->>+';
+      if (type === 'notify') {
+        arrow = '-->>+';
+      } else if (type === 'message') {
+        arrow = '->>+';
+      }
+
+      let methodDisplay =
+        method && method.length > 25
+          ? method.substring(0, 25) + '...'
+          : method || 'unknown';
+
+      methodDisplay = methodDisplay.replace(/[^\w\s\-.,;:()]/g, '_');
+      result += `    ${safeSourceVat}${arrow}${safeTargetVat}: ${methodDisplay}\n`;
+    }
+
+    // Add logical breaks every 5 interactions for better readability
+    if (index % 5 === 4 && index < interactions.length - 1) {
+      const nextTime = interactions[index + 1].time;
+      const timeGap = nextTime - time;
+      const significantGap = timeGap > 30;
+      if (significantGap) {
+        result += `    Note over System: Time gap (${Math.floor(
+          timeGap
+        )} seconds)\n`;
+      }
+    }
+  });
+
+  return result;
 };

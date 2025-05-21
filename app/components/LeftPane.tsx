@@ -2,7 +2,10 @@ import { useState } from 'react';
 import Neo4jSequenceDiagram from './Neo4jSequenceDiagram';
 import LogImporter from './LogImporter';
 
-const LeftPane = ({ onDiagramGenerated }) => {
+type Props = {
+  onDiagramGenerated: (diagramCode: string) => void;
+};
+const LeftPane = ({ onDiagramGenerated }: Props) => {
   const [activeTab, setActiveTab] = useState<'view' | 'import'>('view');
   return (
     <div className='left-pane-content'>

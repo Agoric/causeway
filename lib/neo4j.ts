@@ -1,6 +1,6 @@
-import neo4j from 'neo4j-driver';
+import neo4j, { Driver } from 'neo4j-driver';
 
-let driverInstance;
+let driverInstance: Driver;
 
 const getDriver = () => {
   if (!driverInstance) {

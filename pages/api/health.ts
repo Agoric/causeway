@@ -1,6 +1,8 @@
 import driver from '../../lib/neo4j';
 
-const handler = async (_req, res) => {
+import type { NextApiRequest, NextApiResponse } from 'next';
+
+const handler = async (_req: NextApiRequest, res: NextApiResponse) => {
   try {
     await driver.verifyConnectivity();
     res

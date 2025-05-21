@@ -1,12 +1,52 @@
 export type Vat = {
-  id: string;
+  vatID: string;
+  name: string;
+  time: number;
+};
+
+export type Block = { height: any; time: any; blockTime: any };
+export type Delivery =
+  | {
+      type: 'message';
+      method: string;
+      vatID: string;
+      time: number;
+      target: any;
+      result: any;
+      crankNum: any;
+      blockHeight: any;
+    }
+  | {
+      type: 'notify';
+      state: any;
+      vatID: string;
+      time: number;
+      kpid: any;
+      blockHeight: any;
+    };
+
+export type Syscall = {
+  type: 'send';
+  method: string;
+  vatID: string;
+  time: number;
+  target: any;
+  result: any;
+  rejected?: any;
+};
+
+export type PromiseObj = {
+  kpid?: any;
+  creator?: any;
+  resolver?: any;
 };
 
 export type Interaction = {
-  source: string;
-  target: string;
-  method?: string;
-  interactions: any;
+  sourceVat: string;
+  targetVat: string;
+  method: string;
+  time: number;
+  type: string;
 };
 
 export type Interactions = {
@@ -22,4 +62,12 @@ export type Interactions = {
 export type TimeRange = {
   min: number | null;
   max: number | null;
+};
+
+export type Neo4jGraphInput = {
+  vats: Vat[];
+  deliveries: Delivery[];
+  syscalls: Syscall[];
+  blocks: Block[];
+  promises: PromiseObj[];
 };

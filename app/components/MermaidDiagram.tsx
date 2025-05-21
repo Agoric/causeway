@@ -47,9 +47,11 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
 
   // Render the current page diagram
   useEffect(() => {
-    if (mermaidRef.current !== null && pages.length > 0) {
-      renderDiagram({ mermaidRef, pages, currentPage });
-    }
+    renderDiagram({
+      mermaidRef: mermaidRef as React.RefObject<HTMLDivElement>,
+      pages,
+      currentPage,
+    });
   }, [pages, currentPage]);
 
   useEffect(() => {

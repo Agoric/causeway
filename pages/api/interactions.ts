@@ -1,11 +1,15 @@
 import driver from '../../lib/neo4j';
 
-const handler = async (req, res) => {
+import type { NextApiRequest, NextApiResponse } from 'next';
+
+const handler = async (req: NextApiRequest, res: NextApiResponse) => {
   const session = driver.session();
   try {
     const { startTime, endTime } = req.query;
-    const startTimestamp = parseFloat(startTime) || 0;
-    const endTimestamp = parseFloat(endTime) || Math.floor(Date.now() / 1000);
+
+    const startTimestamp = parseFloat(startTime as string) || 0;
+    const endTimestamp =
+      parseFloat(endTime as string) || Math.floor(Date.now() / 1000);
 
     const messageQuery = `
       MATCH (m:Message)-[call:CALL]->(target:Vat),
@@ -41,7 +45,7 @@ const handler = async (req, res) => {
       endTime: endTimestamp,
     });
 
-    const format = (record) => ({
+    const format = (record: any) => ({
       sourceVat: record.get('sourceVat'),
       targetVat: record.get('targetVat'),
       method: record.get('method'),

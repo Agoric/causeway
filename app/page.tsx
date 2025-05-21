@@ -13,7 +13,7 @@ export default function Page() {
     Note over A,B: Connect to Neo4j and set time range to generate a real diagram
   `);
 
-  const handleDiagramGenerated = (diagramCode) => {
+  const handleDiagramGenerated = (diagramCode: string) => {
     setMermaidCode(diagramCode);
   };
 

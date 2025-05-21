@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TimeRange } from '../types';
+import { Block, Delivery, PromiseObj, Syscall, TimeRange, Vat } from '../types';
 import {
   createNeo4jDriver,
   formatUnixTimestamp,
@@ -11,7 +11,7 @@ const LogImporter = () => {
   const [uri, setUri] = useState('bolt://localhost:7687');
   const [username, setUsername] = useState('neo4j');
   const [password, setPassword] = useState('secretpassword'); // Default password for convenience
-  const [file, setFile] = useState(null);
+  const [file, setFile] = useState<File | null>(null);
   const [status, setStatus] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [timeRange, setTimeRange] = useState<TimeRange>({
@@ -19,8 +19,8 @@ const LogImporter = () => {
     max: null,
   });
 
-  const handleFileChange = (e) => {
-    if (e.target.files[0]) {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0]);
       setStatus(
         `Selected file: ${e.target.files[0].name} (${(
@@ -44,15 +44,15 @@ const LogImporter = () => {
     let driver;
     try {
       const data = (await processLogFile(file, setStatus)) as {
-        vats: any[];
-        deliveries: any[];
-        syscalls: any[];
-        blocks: any[];
-        promises: any[];
+        vats: Vat[];
+        deliveries: Delivery[];
+        syscalls: Syscall[];
+        blocks: Block[];
+        promises: PromiseObj[];
       };
 
       setStatus('Connecting to Neo4j...');
-      driver = await createNeo4jDriver(uri, username, password);
+      driver = await createNeo4jDriver();
       const session = driver.session();
 
       setStatus('Generating Neo4j graph...');
@@ -66,7 +66,7 @@ const LogImporter = () => {
 
       data.deliveries.forEach((item) => {
         if (item.time) {
-          const time = parseFloat(item.time);
+          const time = item.time;
           if (!isNaN(time)) {
             minTime = Math.min(minTime, time);
             maxTime = Math.max(maxTime, time);
@@ -76,7 +76,7 @@ const LogImporter = () => {
 
       data.syscalls.forEach((item) => {
         if (item.time) {
-          const time = parseFloat(item.time);
+          const time = item.time;
           if (!isNaN(time)) {
             minTime = Math.min(minTime, time);
             maxTime = Math.max(maxTime, time);
