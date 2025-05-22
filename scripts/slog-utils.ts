@@ -26,11 +26,8 @@ const extractSmallcaps = (data: { body: string; slots?: any[] }) => {
 };
 
 const isSupportedSlogEntryLine = (line: string): boolean => {
-  return (
-    line.includes('"type":"create-vat"') ||
-    line.includes('"type":"cosmic-swingset-begin-block"') ||
-    line.includes('"type":"deliver"') ||
-    line.includes('"type":"syscall"')
+  return /"type":"(create-vat|cosmic-swingset-begin-block|deliver|syscall)"/.test(
+    line,
   );
 };
 
