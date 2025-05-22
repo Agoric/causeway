@@ -151,23 +151,6 @@ const generateNeo4jGraph = async (data: SlogData, session: Session) => {
   }
 };
 
-/**
- * Process a single log file
- */
-const processFileForNeo4j = async (slogfileName: string, driver: Driver) => {
-  console.log(`Processing ${slogfileName} for Neo4j`);
-  const session = driver.session();
-
-  let inputStream = fs.createReadStream(slogfileName, { encoding: 'utf-8' });
-
-  const entries = readJSONLines(inputStream);
-  const diagramData = await processSlogEntries(entries);
-
-  await generateNeo4jGraph(diagramData, session);
-
-  console.log('Diagram data:', diagramData);
-};
-
 const processIncremental = async (
   slogfileName: string,
   driver: Driver,
