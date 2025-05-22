@@ -1,6 +1,16 @@
-#!/usr/bin/env ts-node
-
-import { Block, Delivery, Syscall, SlogData } from '../app/types';
+import {
+  Block,
+  CosmicSwingsetBeginBlockLogEntry,
+} from '../app/types/cosmic-swingset-block';
+import { Vat, CreateVatLogEntry } from '../app/types/create-vat';
+import { DeliverLogEntry, Delivery } from '../app/types/delivery';
+import {
+  Syscall,
+  SyscallLogEntry,
+  SyscallResolve,
+  SyscallSend,
+} from '../app/types/syscall';
+import { SlogData, TrackedPromise } from '../app/types/common';
 
 /**
  * Helper to extract method name and slots from smallcaps
@@ -42,47 +52,44 @@ export const readJSONLines = async function* (
 export const processSlogEntries = async (
   entries: AsyncIterable<Record<string, any>>,
 ): Promise<SlogData> => {
-  // Track vat information
-  const vatInfo = new Map();
-  // Track message deliveries
-  const deliveries: Delivery[] = [];
-  // Track syscalls
-  const syscalls: Syscall[] = [];
-  // Track blocks
+  const vats: Vat[] = [];
   const blocks: Block[] = [];
-  // Track promises
-  const promises = new Map();
+  const deliveries: Delivery[] = [];
+  const syscalls: Syscall[] = [];
+  const promises: Map<string, TrackedPromise> = new Map();
 
   let currentBlockHeight = 0;
-  let currentBlockTime = 0;
 
   for await (const entry of entries) {
     switch (entry.type) {
-      case 'create-vat':
-        vatInfo.set(entry.vatID, {
-          vatID: entry.vatID,
-          name: entry.name || entry.vatID,
-          time: entry.time,
+      case 'create-vat': {
+        const createVatEntry = entry as CreateVatLogEntry;
+        vats.push({
+          vatID: createVatEntry.vatID,
+          name: createVatEntry.name || createVatEntry.vatID,
+          time: createVatEntry.time,
         });
         break;
-
-      case 'cosmic-swingset-begin-block':
-        currentBlockHeight = entry.blockHeight;
-        currentBlockTime = entry.blockTime;
+      }
+      case 'cosmic-swingset-begin-block': {
+        const beginBlockEntry = entry as CosmicSwingsetBeginBlockLogEntry;
+        // TODO: understand why this height is used in `deliver` and `syscall` entries
+        currentBlockHeight = beginBlockEntry.blockHeight;
         blocks.push({
-          height: currentBlockHeight,
-          time: entry.time,
-          blockTime: currentBlockTime,
+          height: beginBlockEntry.blockHeight,
+          time: beginBlockEntry.time,
+          blockTime: beginBlockEntry.blockTime,
         });
         break;
+      }
+      case 'deliver': {
+        const deliverEntry = entry as DeliverLogEntry;
 
-      case 'deliver':
-        if (entry.kd && entry.kd[0] === 'message') {
-          const target = entry.kd[1];
-          const methargs = entry.kd[2].methargs;
-          const result = entry.kd[2].result;
+        if (deliverEntry.kd && deliverEntry.kd[0] === 'message') {
+          const target = deliverEntry.kd[1];
+          const methargs = deliverEntry.kd[2].methargs;
+          const result = deliverEntry.kd[2].result;
 
-          // Extract method name from smallcaps
           let methodName = 'unknown';
           try {
             const { methname } = extractSmallcaps(methargs);
@@ -93,12 +100,12 @@ export const processSlogEntries = async (
 
           deliveries.push({
             type: 'message',
-            crankNum: entry.crankNum,
-            vatID: entry.vatID,
+            crankNum: deliverEntry.crankNum,
+            vatID: deliverEntry.vatID,
             target,
             method: methodName,
             result,
-            time: entry.time,
+            time: deliverEntry.time,
             blockHeight: currentBlockHeight,
           });
 
@@ -107,85 +114,93 @@ export const processSlogEntries = async (
             promises.set(result, {
               kpid: result,
               state: 'pending',
-              created: entry.time,
-              creator: entry.vatID,
+              created: deliverEntry.time,
+              creator: deliverEntry.vatID,
             });
           }
-        } else if (entry.kd && entry.kd[0] === 'notify') {
-          for (const [kpid, resolution] of entry.kd[1]) {
+        } else if (deliverEntry.kd && deliverEntry.kd[0] === 'notify') {
+          for (const [kpid, resolution] of deliverEntry.kd[1]) {
             deliveries.push({
               type: 'notify',
-              vatID: entry.vatID,
+              vatID: deliverEntry.vatID,
               kpid,
               state: resolution.state,
-              time: entry.time,
+              time: deliverEntry.time,
               blockHeight: currentBlockHeight,
             });
 
-            // Update promise state
             if (promises.has(kpid)) {
-              const promise = promises.get(kpid);
+              const promise = promises.get(kpid)!;
               promise.state = resolution.state;
-              promise.resolved = entry.time;
-              promise.resolver = entry.vatID;
+              promise.resolved = deliverEntry.time;
+              promise.resolver = deliverEntry.vatID;
             }
           }
         }
         break;
+      }
+      case 'syscall': {
+        const syscallEntry = entry as SyscallLogEntry;
 
-      case 'syscall':
-        if (entry.ksc && entry.ksc[0] === 'send') {
-          const target = entry.ksc[1];
-          const method = entry.ksc[2].method;
-          const result = entry.ksc[2].result;
+        if (syscallEntry.ksc && syscallEntry.ksc[0] === 'send') {
+          const target = syscallEntry.ksc[1];
+          const method = syscallEntry.ksc[2].methargs
+            ? (extractSmallcaps(syscallEntry.ksc[2].methargs)?.methname ??
+              'unknown')
+            : 'unknown';
+          const result = syscallEntry.ksc[2].result;
 
-          syscalls.push({
+          const syscall: SyscallSend = {
             type: 'send',
-            vatID: entry.vatID,
+            vatID: syscallEntry.vatID,
             target,
             method,
             result,
-            time: entry.time,
+            time: syscallEntry.time,
             blockHeight: currentBlockHeight,
-          });
+          };
+
+          syscalls.push(syscall);
 
           // Track promise if it exists
           if (result) {
             promises.set(result, {
               kpid: result,
               state: 'pending',
-              created: entry.time,
-              creator: entry.vatID,
+              created: syscallEntry.time,
+              creator: syscallEntry.vatID,
             });
           }
-        } else if (entry.ksc && entry.ksc[0] === 'resolve') {
-          for (const resolution of entry.ksc[2]) {
-            const [kpid, rejected] = resolution;
-
-            syscalls.push({
+        } else if (syscallEntry.ksc && syscallEntry.ksc[0] === 'resolve') {
+          const resolutions = syscallEntry.ksc[2];
+          for (const [kpid, rejected] of resolutions) {
+            const syscall: SyscallResolve = {
               type: 'resolve',
-              vatID: entry.vatID,
+              vatID: syscallEntry.vatID,
               kpid,
               rejected,
-              time: entry.time,
+              time: syscallEntry.time,
               blockHeight: currentBlockHeight,
-            });
+            };
 
-            // Update promise state
+            syscalls.push(syscall);
+
+            // Update the state of the resolved promise
             if (promises.has(kpid)) {
-              const promise = promises.get(kpid);
+              const promise = promises.get(kpid)!;
               promise.state = rejected ? 'rejected' : 'fulfilled';
-              promise.resolved = entry.time;
-              promise.resolver = entry.vatID;
+              promise.resolved = syscallEntry.time;
+              promise.resolver = syscallEntry.vatID;
             }
           }
         }
         break;
+      }
     }
   }
 
   return {
-    vats: Array.from(vatInfo.values()),
+    vats,
     deliveries,
     syscalls,
     blocks,

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Block, Delivery, PromiseObj, Syscall, TimeRange, Vat } from '../types';
+import { SlogData, TimeRange } from '../types/common';
 import {
   createNeo4jDriver,
   formatUnixTimestamp,
@@ -43,13 +43,7 @@ const LogImporter = () => {
 
     let driver;
     try {
-      const data = (await processLogFile(file, setStatus)) as {
-        vats: Vat[];
-        deliveries: Delivery[];
-        syscalls: Syscall[];
-        blocks: Block[];
-        promises: PromiseObj[];
-      };
+      const data = (await processLogFile(file, setStatus)) as SlogData;
 
       setStatus('Connecting to Neo4j...');
       driver = await createNeo4jDriver();

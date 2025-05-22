@@ -1,16 +1,8 @@
 import { Session, Driver } from 'neo4j-driver';
 import driver from '../lib/neo4j';
 import mermaid from 'mermaid';
-import {
-  Block,
-  Delivery,
-  Interaction,
-  SlogData,
-  PromiseObj,
-  Syscall,
-  Vat,
-  State,
-} from './types';
+import { Interaction, SlogData, State } from './types/common';
+import { Vat } from './types/create-vat';
 
 export const createNeo4jDriver = async (): Promise<Driver> => {
   try {
@@ -190,13 +182,7 @@ export const processLogFile = async (
 
         setProgress(`Processing ${totalLines} log entries...`);
 
-        const data: {
-          vats: Vat[];
-          deliveries: Delivery[];
-          syscalls: Syscall[];
-          blocks: Block[];
-          promises: PromiseObj[];
-        } = {
+        const data: SlogData = {
           vats: [],
           deliveries: [],
           syscalls: [],

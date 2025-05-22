@@ -1,7 +1,7 @@
 import { Driver, Session } from 'neo4j-driver';
 import fs from 'fs';
 import { processSlogEntries, readJSONLines } from './slog-utils';
-import { SlogData } from '../app/types';
+import { SlogData } from '../app/types/common';
 import driver from '../lib/neo4j';
 import chokidar from 'chokidar';
 
