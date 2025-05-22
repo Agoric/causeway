@@ -25,6 +25,15 @@ const extractSmallcaps = (data: { body: string; slots?: any[] }) => {
   return { methname, slots: slots || [] };
 };
 
+const isSupportedSlogEntryLine = (line: string): boolean => {
+  return (
+    line.includes('"type":"create-vat"') ||
+    line.includes('"type":"cosmic-swingset-begin-block"') ||
+    line.includes('"type":"deliver"') ||
+    line.includes('"type":"syscall"')
+  );
+};
+
 export const readJSONLines = async function* (
   data: AsyncIterable<Buffer>,
 ): AsyncGenerator<Record<string, any>> {
@@ -35,15 +44,9 @@ export const readJSONLines = async function* (
       let line = buf.slice(0, pos);
       buf = buf.slice(pos + 1);
       try {
-        if (
-          line.includes('"type":"create-vat"') &&
-          line.includes('"endoZipBase64":')
-        ) {
-          // Sanitize the line to replace huge base64 string before JSON.parse
-          line = line.replace(
-            /"endoZipBase64"\s*:\s*"(?:\\.|[^"\\])*"/,
-            `"endoZipBase64": "<omitted>"`,
-          );
+        // Skip lines that are not relevant
+        if (!isSupportedSlogEntryLine(line)) {
+          continue;
         }
 
         yield JSON.parse(line);
