@@ -1,7 +1,7 @@
 import { Session, Driver } from 'neo4j-driver';
 import driver from '../lib/neo4j';
 import mermaid from 'mermaid';
-import { Interaction, SlogData, State } from './types/common';
+import { Interaction, SlogData, PromiseState } from './types/common';
 import { Vat } from './types/create-vat';
 
 export const createNeo4jDriver = async (): Promise<Driver> => {
@@ -277,7 +277,7 @@ export const processLogFile = async (
 
                   data.deliveries.push({
                     type: 'notify',
-                    state: state as State,
+                    state: state as PromiseState,
                     vatID,
                     time,
                     kpid: kd[1],

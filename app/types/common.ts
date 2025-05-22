@@ -1,13 +1,16 @@
-import { Block } from './cosmic-swingset-block';
-import { Vat } from './create-vat';
-import { Delivery } from './delivery';
-import { Syscall } from './syscall';
+import {
+  Block,
+  CosmicSwingsetBeginBlockLogEntry,
+} from './cosmic-swingset-block';
+import { CreateVatLogEntry, Vat } from './create-vat';
+import { DeliverLogEntry, Delivery } from './delivery';
+import { Syscall, SyscallLogEntry } from './syscall';
 
-export type State = 'fulfilled' | 'rejected' | 'pending';
+export type PromiseState = 'fulfilled' | 'rejected' | 'pending';
 
 export type TrackedPromise = {
   kpid: string;
-  state: State;
+  state: PromiseState;
   created: number;
   creator: string; // vatID
   // These fields are added once resolved (optional initially)
@@ -45,3 +48,15 @@ export type SlogData = {
   blocks: Block[];
   promises: TrackedPromise[];
 };
+
+export type SupportedSlogEntryType =
+  | 'create-vat'
+  | 'cosmic-swingset-begin-block'
+  | 'deliver'
+  | 'syscall';
+
+export type SlogEntries =
+  | CosmicSwingsetBeginBlockLogEntry
+  | CreateVatLogEntry
+  | DeliverLogEntry
+  | SyscallLogEntry;

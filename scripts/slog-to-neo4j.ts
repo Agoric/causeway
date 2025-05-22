@@ -1,7 +1,7 @@
 import { Driver, Session } from 'neo4j-driver';
 import fs from 'fs';
 import { processSlogEntries, readJSONLines } from './slog-utils';
-import { SlogData } from '../app/types/common';
+import { SlogData, SlogEntries } from '../app/types/common';
 import driver from '../lib/neo4j';
 import chokidar from 'chokidar';
 
@@ -151,7 +151,7 @@ const generateNeo4jGraph = async (data: SlogData, session: Session) => {
   }
 };
 
-const processIncremental = async (
+const processSlogs = async (
   slogfileName: string,
   driver: Driver,
   startPos: number,
@@ -166,7 +166,9 @@ const processIncremental = async (
     });
 
     const entries = readJSONLines(readStream);
-    const diagramData = await processSlogEntries(entries);
+    const diagramData = await processSlogEntries(
+      entries as AsyncIterable<SlogEntries>,
+    );
 
     await generateNeo4jGraph(diagramData, session);
 
@@ -192,7 +194,7 @@ const watchFile = (slogfileName: string, driver: Driver) => {
   try {
     const stats = fs.statSync(slogfileName);
     position = stats.size;
-    processIncremental(slogfileName, driver, 0, position);
+    processSlogs(slogfileName, driver, 0, position);
   } catch (error) {
     console.error(`Error initial processing for ${slogfileName}:`, error);
   }
@@ -214,7 +216,7 @@ const watchFile = (slogfileName: string, driver: Driver) => {
       }
 
       if (newSize > position) {
-        await processIncremental(slogfileName, driver, position, newSize);
+        await processSlogs(slogfileName, driver, position, newSize);
         position = newSize;
       }
     } catch (error) {

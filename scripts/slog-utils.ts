@@ -10,7 +10,7 @@ import {
   SyscallResolve,
   SyscallSend,
 } from '../app/types/syscall';
-import { SlogData, TrackedPromise } from '../app/types/common';
+import { SlogData, SlogEntries, TrackedPromise } from '../app/types/common';
 
 /**
  * Helper to extract method name and slots from smallcaps
@@ -47,7 +47,7 @@ export const readJSONLines = async function* (
 };
 
 export const processSlogEntries = async (
-  entries: AsyncIterable<Record<string, any>>,
+  entries: AsyncIterable<SlogEntries>,
 ): Promise<SlogData> => {
   const vats: Vat[] = [];
   const blocks: Block[] = [];
