@@ -26,7 +26,14 @@ export const readJSONLines = async function* (
     buf += chunk;
     for (let pos = buf.indexOf('\n'); pos >= 0; pos = buf.indexOf('\n')) {
       const line = buf.slice(0, pos);
-      yield JSON.parse(line);
+      try {
+        yield JSON.parse(line);
+      } catch (err) {
+        const error = new Error(`Failed to parse JSON line: ${line}`);
+        (error as any).line = line;
+        (error as any).originalError = err;
+        throw error;
+      }
       buf = buf.slice(pos + 1);
     }
   }
