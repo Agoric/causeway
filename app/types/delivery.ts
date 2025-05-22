@@ -22,7 +22,7 @@ type NotifyKernelResolution = [
   },
 ];
 
-type NotifyVatResolution = [vpid: string, state: boolean, data: CapData];
+type NotifyVatResolution = [vpid: string, rejected: boolean, data: CapData];
 
 type DeliverNotifyKD = ['notify', [NotifyKernelResolution]];
 
