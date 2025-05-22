@@ -32,8 +32,20 @@ export const readJSONLines = async function* (
   for await (const chunk of data) {
     buf += chunk;
     for (let pos = buf.indexOf('\n'); pos >= 0; pos = buf.indexOf('\n')) {
-      const line = buf.slice(0, pos);
+      let line = buf.slice(0, pos);
+      buf = buf.slice(pos + 1);
+
       try {
+        if (
+          line.includes('"type":"create-vat"') &&
+          line.includes('"endoZipBase64":')
+        ) {
+          line = line.replace(
+            /"endoZipBase64"\s*:\s*"(?:\\.|[^"\\])*"/,
+            `"endoZipBase64": "<omitted>"`,
+          );
+        }
+
         yield JSON.parse(line);
       } catch (err) {
         const error = new Error(`Failed to parse JSON line: ${line}`);
@@ -41,7 +53,6 @@ export const readJSONLines = async function* (
         (error as any).originalError = err;
         throw error;
       }
-      buf = buf.slice(pos + 1);
     }
   }
 };
