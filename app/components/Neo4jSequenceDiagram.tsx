@@ -11,8 +11,9 @@ type Props = {
   onDiagramGenerated: (diagramCode: string) => void;
 };
 const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
-  const [startTime, setStartTime] = useState('1629570627.218393'); // Default start time
-  const [endTime, setEndTime] = useState('1829570627.218393'); // Default end time
+  const now = Date.now() / 1000; // Current Unix timestamp in seconds (with decimals)
+  const [startTime, setStartTime] = useState('1747926115.295377');
+  const [endTime, setEndTime] = useState(now.toString()); // now
   const [interactionsPerPage, setInteractionsPerPage] = useState(20);
   const [status, setStatus] = useState('');
   const [isLoading, setIsLoading] = useState(false);
