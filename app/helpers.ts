@@ -228,6 +228,11 @@ export const renderDiagram = async ({
   }
 };
 
+const getMermaidId = (vatId: string) => `Vat_${vatId.replace(/[^\w]/g, '_')}`;
+
+const truncate = (name: string, maxLength = 15) =>
+  name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
+
 const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
   let result = '';
 
@@ -247,22 +252,22 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
           ? targetVat.substring(7)
           : targetVat;
 
-        const safeSourceVat = `Vat_${sourceVat.replace(/[^\w]/g, '_')}`;
+        const safeSourceVat = getMermaidId(sourceVat);
 
         const methodDisplay =
           method && method.length > 15
             ? `${method.substring(0, 15)}... (${externalName.substring(0, 15)})`
-            : `${method || 'unknown'} (${externalName.substring(0, 15)})`;
+            : `${method} (${externalName.substring(0, 15)})`;
 
         result += `    ${safeSourceVat}-x>External: ${methodDisplay}\n`;
       } else if (vatIds.has(targetVat)) {
-        const safeSourceVat = `Vat_${sourceVat.replace(/[^\w]/g, '_')}`;
-        const safeTargetVat = `Vat_${targetVat.replace(/[^\w]/g, '_')}`;
+        const safeSourceVat = getMermaidId(sourceVat);
+        const safeTargetVat = getMermaidId(targetVat);
 
         const methodDisplay =
           method && method.length > 20
             ? `${method.substring(0, 20)}...`
-            : method || 'unknown';
+            : method;
 
         result += `    ${safeSourceVat}->>>${safeTargetVat}: ${methodDisplay}\n`;
       }
@@ -273,7 +278,7 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
       if (sourceVat === 'system') {
         safeSourceVat = 'System';
       } else if (vatIds.has(sourceVat)) {
-        safeSourceVat = `Vat_${sourceVat.replace(/[^\w]/g, '_')}`;
+        safeSourceVat = getMermaidId(sourceVat);
       } else {
         return;
       }
@@ -282,7 +287,7 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
       if (targetVat === 'system') {
         safeTargetVat = 'System';
       } else if (vatIds.has(targetVat)) {
-        safeTargetVat = `Vat_${targetVat.replace(/[^\w]/g, '_')}`;
+        safeTargetVat = getMermaidId(targetVat);
       } else {
         return;
       }
@@ -295,9 +300,7 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
       }
 
       let methodDisplay =
-        method && method.length > 25
-          ? method.substring(0, 25) + '...'
-          : method || 'unknown';
+        method && method.length > 25 ? method.substring(0, 25) + '...' : method;
 
       methodDisplay = methodDisplay.replace(/[^\w\s\-.,;:()]/g, '_');
       result += `    ${safeSourceVat}${arrow}${safeTargetVat}: ${methodDisplay}\n`;
@@ -318,11 +321,6 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
 
   return result;
 };
-
-const getMermaidId = (vatId: string) => `Vat_${vatId.replace(/[^\w]/g, '_')}`;
-
-const truncate = (name: string, maxLength = 15) =>
-  name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
 
 const generateParticipants = (
   interactions: Interaction[],
