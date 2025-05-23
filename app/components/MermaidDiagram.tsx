@@ -28,7 +28,7 @@ mermaid.initialize({
     width: 150,
     height: 65,
     wrap: false,
-    hideUnusedParticipants: false,
+    hideUnusedParticipants: true,
   },
   fontFamily: 'monospace',
   fontSize: 16,
