@@ -319,34 +319,25 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
   return result;
 };
 
-const generateParticipants = (interactions: Interaction[], vats: Vat[]) => {
+const getMermaidId = (vatId: string) => `Vat_${vatId.replace(/[^\w]/g, '_')}`;
+
+const truncate = (name: string, maxLength = 15) =>
+  name.length > maxLength ? `${name.slice(0, maxLength)}...` : name;
+
+const generateParticipants = (
+  interactions: Interaction[],
+  vats: Vat[],
+): string => {
   let result = '';
-
-  const vatIds = new Set();
-  vats.forEach((vat) => {
-    vatIds.add(vat.vatID);
-  });
-
   const hasSystemMessages = interactions.some(
     (i) => i.sourceVat === 'system' || i.targetVat === 'system',
   );
 
-  Array.from(vatIds).forEach((vatId) => {
-    // Sanitize vatId for Mermaid
-    const safeVatId = `Vat_${String(vatId).replace(/[^\w]/g, '_')}`;
-
-    const vat = vats.find((v) => v.vatID === vatId);
-    const displayName: string = vat?.name || String(vatId);
-
-    const truncatedName =
-      displayName.length > 15
-        ? displayName.substring(0, 15) + '...'
-        : displayName;
-
-    // Add all participants - Mermaid doesn't support conditional styling through syntax
-    // Instead, we'll just include all participants consistently
-    result += `    participant ${safeVatId} as ${truncatedName}\n`;
-  });
+  for (const vat of vats) {
+    const mermaidId = getMermaidId(vat.vatID);
+    const displayName = truncate(vat.name);
+    result += `    participant ${mermaidId} as ${displayName}\n`;
+  }
 
   if (hasSystemMessages) {
     result += '    participant System as "System"\n';
