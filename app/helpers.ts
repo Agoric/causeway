@@ -345,7 +345,7 @@ const generateParticipants = (interactions: Interaction[], vats: Vat[]) => {
 
     // Add all participants - Mermaid doesn't support conditional styling through syntax
     // Instead, we'll just include all participants consistently
-    result += `    participant ${safeVatId} as "${truncatedName}"\n`;
+    result += `    participant ${safeVatId} as ${truncatedName}\n`;
   });
 
   if (hasSystemMessages) {
