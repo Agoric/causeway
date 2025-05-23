@@ -333,7 +333,8 @@ const generateParticipants = (
 
   for (const vat of vats) {
     const mermaidId = getMermaidId(vat.vatID);
-    const displayName = truncate(vat.name);
+    const displayName =
+      vat.vatID !== vat.name ? `${vat.vatID}:${truncate(vat.name)}` : vat.vatID;
     result += `    participant ${mermaidId} as ${displayName}\n`;
   }
 
