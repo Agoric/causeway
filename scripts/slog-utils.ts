@@ -21,8 +21,7 @@ const extractSmallcaps = (data: { body: string; slots?: any[] }) => {
     throw Error('ersatz decoder only handles smallcaps');
   }
   const methargs = JSON.parse(body.slice(1));
-  const methname = methargs[0];
-  return { methname, slots: slots || [] };
+  return { methargs, slots: slots || [] };
 };
 
 const isSupportedSlogEntryLine = (line: string): boolean => {
@@ -104,9 +103,11 @@ export const processSlogEntries = async (
           const result = kd[2].result;
 
           let method = 'unknown';
+          let methodArguments = 'unknown';
           try {
-            const { methname } = extractSmallcaps(methargs);
-            method = methname;
+            const { methargs: args } = extractSmallcaps(methargs);
+            method = args[0];
+            methodArguments = args[1];
           } catch (error) {
             console.warn('Failed to extract method name:', error);
           }
@@ -117,6 +118,7 @@ export const processSlogEntries = async (
             vatID,
             target,
             method,
+            methargs: methodArguments,
             result,
             time,
             blockHeight: currentBlockHeight,
@@ -163,9 +165,11 @@ export const processSlogEntries = async (
           const result = ksc[2].result;
 
           let method = 'unknown';
+          let methodArguments = 'unknown';
           try {
-            const { methname } = extractSmallcaps(methargs);
-            method = methname;
+            const { methargs: args } = extractSmallcaps(methargs);
+            method = args[0];
+            methodArguments = args[1];
           } catch (error) {
             console.warn('Failed to extract method name:', error);
           }
@@ -175,6 +179,7 @@ export const processSlogEntries = async (
             vatID,
             target,
             method,
+            methargs: methodArguments,
             result,
             time,
             blockHeight: currentBlockHeight,

@@ -48,6 +48,7 @@ type DeliveryMessage = {
   vatID: string;
   target: string;
   method: string;
+  methargs: string;
   result: string | null;
   time: number;
   blockHeight: number;

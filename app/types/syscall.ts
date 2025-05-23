@@ -36,6 +36,7 @@ export type SyscallSend = {
   vatID: string;
   target: string;
   method: string;
+  methargs: string;
   result: string;
   time: number;
   blockHeight?: number;

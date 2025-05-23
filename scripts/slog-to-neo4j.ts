@@ -97,13 +97,15 @@ const generateNeo4jGraph = async (data: SlogData, session: Session) => {
       );
     }
     if (msg.type === 'message') {
+      console.log('GGG........');
       await session.run(
-        `CREATE (m:Message {method: $method, time: $time, crankNum: $crankNum, target: $target, result: $result, blockHeight: $blockHeight})
+        `CREATE (m:Message {method: $method, methargs: $methargs, time: $time, crankNum: $crankNum, target: $target, result: $result, blockHeight: $blockHeight})
          WITH m
          MATCH (v:Vat {vatID: $vatID})
          CREATE (m)-[:CALL{object: $target, method: $method, call: $call }]->(v)`,
         {
           method: msg.method || 'unknown',
+          methargs: msg.methargs[1] || 'unknown',
           time: msg.time,
           crankNum: msg.crankNum || null,
           vatID: msg.vatID,
@@ -120,12 +122,13 @@ const generateNeo4jGraph = async (data: SlogData, session: Session) => {
   for (const syscall of syscalls) {
     if (syscall.type === 'send') {
       await session.run(
-        `CREATE (s:Syscall {method: $method, time: $time, result: $result, target: $target, rejected: $rejected})
+        `CREATE (s:Syscall {method: $method, methargs: $methargs, time: $time, result: $result, target: $target, rejected: $rejected})
          WITH s
          MATCH (v:Vat {vatID: $vatID})
          CREATE (s)-[:SYSCALL_FROM]->(v)`,
         {
           method: syscall.method || 'unknown',
+          methargs: syscall.methargs[1] || 'unknown',
           result: syscall.result || null,
           time: syscall.time,
           vatID: syscall.vatID,

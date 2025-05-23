@@ -303,7 +303,7 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
         method && method.length > 25 ? method.substring(0, 25) + '...' : method;
 
       methodDisplay = methodDisplay.replace(/[^\w\s\-.,;:()]/g, '_');
-      result += `    ${safeSourceVat}${arrow}${safeTargetVat}: ${methodDisplay}\n`;
+      result += `    ${safeSourceVat}${arrow}${safeTargetVat}: ${methodDisplay}()\n`;
     }
 
     // Add logical breaks every 5 interactions for better readability
