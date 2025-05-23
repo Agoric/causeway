@@ -6,7 +6,7 @@ import { CreateVatLogEntry, Vat } from './create-vat';
 import { DeliverLogEntry, Delivery } from './delivery';
 import { Syscall, SyscallLogEntry } from './syscall';
 
-export type PromiseState = 'fulfilled' | 'rejected' | 'pending';
+type PromiseState = 'fulfilled' | 'rejected' | 'pending';
 
 export type TrackedPromise = {
   kpid: string;
@@ -34,11 +34,6 @@ export type Interactions = {
     endTime: number;
     count: number;
   };
-};
-
-export type TimeRange = {
-  min: number | null;
-  max: number | null;
 };
 
 export type SlogData = {
