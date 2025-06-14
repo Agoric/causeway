@@ -3,7 +3,7 @@ import { Interaction } from 'types/common';
 import { Vat } from 'types/create-vat';
 
 // Convert string timestamp (1729570627.218393) to numeric timestamp
-export const parseTimestamp = (timestampStr: string) => {
+export const parseTimestamp = (timestampStr: string | null) => {
   if (!timestampStr) return null;
   const num = parseFloat(timestampStr);
   return isNaN(num) ? null : num;
@@ -303,7 +303,9 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
         methodDisplay,
         '()',
         ` [${promiseId}]`,
-      ].filter(Boolean).join('')
+      ]
+        .filter(Boolean)
+        .join('');
     }
 
     // Add logical breaks every 5 interactions for better readability

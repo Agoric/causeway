@@ -3,18 +3,23 @@ import { Vat } from 'types/create-vat';
 
 const API_BASE = '/api';
 
-export const checkHealth = async (): Promise<Record<string, unknown>> => {
+export const checkHealth = async () => {
   const response = await fetch(`${API_BASE}/health`);
-  const data = await response.json();
-  return data;
+  if (!response.ok) throw new Error('Failed to connect to database');
 };
 
-export const getVats = async (
-  endTime?: number,
-  startTime?: number,
-): Promise<Vat[]> => {
+export const getVats = async ({
+  blockHeight,
+  endTime,
+  startTime,
+}: Partial<{
+  blockHeight: number;
+  endTime: number;
+  startTime: number;
+}>): Promise<Vat[]> => {
   let route = `${API_BASE}/vats?`;
   route += [
+    blockHeight && `blockHeight=${blockHeight}`,
     endTime && `endTime=${endTime}`,
     startTime && `startTime=${startTime}`,
   ]
@@ -28,19 +33,27 @@ export const getVats = async (
   return await response.json();
 };
 
-export const getInteractions = async (
-  startTime: number,
-  endTime: number,
-): Promise<Interactions> => {
-  const url = new URL(`${window.location.origin}${API_BASE}/interactions`);
-  url.searchParams.append('startTime', startTime.toString());
-  url.searchParams.append('endTime', endTime.toString());
+export const getInteractions = async ({
+  blockHeight,
+  endTime,
+  startTime,
+}: Partial<{
+  blockHeight: number;
+  endTime: number;
+  startTime: number;
+}>): Promise<Interactions> => {
+  let route = `${API_BASE}/interactions?`;
+  route += [
+    blockHeight && `blockHeight=${blockHeight}`,
+    endTime && `endTime=${endTime}`,
+    startTime && `startTime=${startTime}`,
+  ]
+    .filter(Boolean)
+    .join('&');
 
-  console.log(`Fetching interactions from: ${url}`);
-  const response = await fetch(url);
-  if (!response.ok) {
+  const response = await fetch(route);
+  if (!response.ok)
     throw new Error(`Error fetching interactions: ${response.statusText}`);
-  }
 
   return await response.json();
 };

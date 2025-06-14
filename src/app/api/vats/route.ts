@@ -9,18 +9,25 @@ export const GET = async (request: NextRequest) => {
     const endTime = searchParams.get('endTime');
     const startTime = searchParams.get('startTime');
 
+    const blockHeight = searchParams.get('blockHeight');
     const endTimestamp =
       parseFloat(endTime as string) || Math.floor(Date.now() / 1000);
     const startTimestamp = parseFloat(startTime as string) || 0;
 
+    const filters = [
+      blockHeight && 'event.blockHeight = $blockHeight',
+      endTimestamp && 'event.time <= $endTime',
+      startTimestamp && 'event.time >= $startTime',
+    ]
+      .filter(Boolean)
+      .join(' AND ');
+
     const result = await session.run<{ vatID: string; vatName: string }>(
       `
-      MATCH (evt)
-      WHERE (evt:Message OR evt:Notify)
-        AND evt.time >= $startTime
-        AND evt.time <= $endTime
-      OPTIONAL MATCH (caller:Vat)-[:CALLED_BY]->(evt)
-      OPTIONAL MATCH (evt)-[:CALL]->(target:Vat)
+      MATCH (event)
+      WHERE (event:Message OR event:Notify) AND ${filters}
+      OPTIONAL MATCH (caller:Vat)-[:CALLED_BY]->(event)
+      OPTIONAL MATCH (event)-[:CALL]->(target:Vat)
       WITH collect(caller) + collect(target) AS vatNodes
       UNWIND vatNodes AS v
       WITH DISTINCT v
@@ -30,8 +37,9 @@ export const GET = async (request: NextRequest) => {
 
     `,
       {
-        startTime: startTimestamp,
+        blockHeight: Number(blockHeight),
         endTime: endTimestamp,
+        startTime: startTimestamp,
       },
     );
     const vats = result.records.map((record) => ({

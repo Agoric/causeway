@@ -25,9 +25,10 @@ const Page = () => {
         <MermaidDiagram code={mermaidCode} />
         <textarea
           className="mermaid-editor"
-          value={mermaidCode}
           onChange={(e) => setMermaidCode(e.target.value)}
+          name='mermaid-code'
           placeholder="Enter Mermaid diagram code here"
+          value={mermaidCode}
         />
       </div>
     </div>

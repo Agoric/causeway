@@ -8,6 +8,8 @@ export const GET = async (request: NextRequest) => {
 
   try {
     const searchParams = request.nextUrl.searchParams;
+
+    const blockHeight = searchParams.get('blockHeight');
     const endTime = searchParams.get('endTime');
     const startTime = searchParams.get('startTime');
 
@@ -15,37 +17,48 @@ export const GET = async (request: NextRequest) => {
     const endTimestamp =
       parseFloat(endTime as string) || Math.floor(Date.now() / 1000);
 
+    const createFilters = (nodeName: string) =>
+      [
+        blockHeight && `${nodeName}.blockHeight = $blockHeight`,
+        endTimestamp && `${nodeName}.time <= $endTime`,
+        startTimestamp && `${nodeName}.time >= $startTime`,
+      ]
+        .filter(Boolean)
+        .join(' AND ');
+
     const messageQuery = `
-      MATCH (m:Message)-[call:CALL]->(target:Vat), (caller:Vat)-[:CALLED_BY]->(m)
-      WHERE m.time >= $startTime AND m.time <= $endTime
+      MATCH (message:Message)-[call:CALL]->(target:Vat), (caller:Vat)-[:CALLED_BY]->(message)
+      WHERE ${createFilters('message')}
       RETURN caller.vatID  AS sourceVat,
-        m.method      AS method,
-        m.result      AS promiseId,
-        m.time        AS time,
+        message.method      AS method,
+        message.result      AS promiseId,
+        message.time        AS time,
         'message'     AS type,
         target.vatID  AS targetVat
-      ORDER BY m.time
+      ORDER BY message.time
     `;
 
     const notifyQuery = `
-      MATCH (n:Notify)-[:CALLED_BY]->(caller:Vat), (n)-[:CALL]->(target:Vat) 
-      WHERE  n.time >= $startTime AND  n.time <= $endTime
+      MATCH (notify:Notify)-[:CALLED_BY]->(caller:Vat), (notify)-[:CALL]->(target:Vat)
+      WHERE ${createFilters('notify')}
       RETURN caller.vatID  AS sourceVat,
-        n.kpid        AS promiseId,
-        n.method      AS method,
-        n.time        AS time,
+        notify.kpid        AS promiseId,
+        notify.method      AS method,
+        notify.time        AS time,
         'notify'      AS type,
         target.vatID  AS targetVat
-      ORDER BY n.time;
+      ORDER BY notify.time;
     `;
 
     const messageResult = await session.run<Interaction>(messageQuery, {
-      startTime: startTimestamp,
+      blockHeight: Number(blockHeight),
       endTime: endTimestamp,
+      startTime: startTimestamp,
     });
     const notifyResult = await session.run<Interaction>(notifyQuery, {
-      startTime: startTimestamp,
+      blockHeight: Number(blockHeight),
       endTime: endTimestamp,
+      startTime: startTimestamp,
     });
 
     const format = (record: Record<Interaction>) => ({

@@ -4,6 +4,7 @@ import Neo4jSequenceDiagram from 'components/Neo4jSequenceDiagram';
 type Props = {
   onDiagramGenerated: (diagramCode: string) => void;
 };
+
 const LeftPane = ({ onDiagramGenerated }: Props) => {
   const [activeTab, setActiveTab] = useState<'view' | 'import'>('view');
 
