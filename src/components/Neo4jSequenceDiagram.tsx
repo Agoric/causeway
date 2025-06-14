@@ -4,8 +4,8 @@ import {
   getVats,
   getInteractions,
   sanitizeInteractions,
-} from '../services/api';
-import { generateMermaidSequenceDiagram, parseTimestamp } from '../helpers';
+} from 'services/api';
+import { generateMermaidSequenceDiagram, parseTimestamp } from 'helpers';
 
 type Props = {
   onDiagramGenerated: (diagramCode: string) => void;

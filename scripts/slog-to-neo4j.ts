@@ -1,9 +1,9 @@
-import { Driver, Session } from 'neo4j-driver';
-import fs from 'fs';
-import { processSlogEntries, readJSONLines } from './slog-utils';
-import { SlogData, SlogEntries } from '../app/types/common';
-import driver from '../lib/neo4j';
 import chokidar from 'chokidar';
+import fs from 'fs';
+import { Driver, Session } from 'neo4j-driver';
+import { SlogData, SlogEntries } from 'types/common';
+import driver from '~/lib/neo4j';
+import { processSlogEntries, readJSONLines } from '~/scripts/slog-utils';
 
 class Metrics {
   processedBlocks: number = 0;

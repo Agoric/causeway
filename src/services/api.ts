@@ -1,5 +1,5 @@
-import { Interactions, Interaction } from '../types/common';
-import { Vat } from '../types/create-vat';
+import { Interactions, Interaction } from 'types/common';
+import { Vat } from 'types/create-vat';
 
 const API_BASE = '/api';
 

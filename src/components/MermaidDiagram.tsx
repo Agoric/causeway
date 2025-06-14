@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
-import { renderDiagram } from '../helpers';
+import { renderDiagram } from 'helpers';
 
 mermaid.initialize({
   startOnLoad: true,

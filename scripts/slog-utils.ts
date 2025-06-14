@@ -1,16 +1,16 @@
+import { SlogData, SlogEntries, TrackedPromise } from 'types/common';
 import {
   Block,
   CosmicSwingsetBeginBlockLogEntry,
-} from '../app/types/cosmic-swingset-block';
-import { Vat, CreateVatLogEntry } from '../app/types/create-vat';
-import { DeliverLogEntry, Delivery } from '../app/types/delivery';
+} from 'types/cosmic-swingset-block';
+import { CreateVatLogEntry, Vat } from 'types/create-vat';
+import { DeliverLogEntry, Delivery } from 'types/delivery';
 import {
   Syscall,
   SyscallLogEntry,
   SyscallResolve,
   SyscallSend,
-} from '../app/types/syscall';
-import { SlogData, SlogEntries, TrackedPromise } from '../app/types/common';
+} from 'types/syscall';
 
 /**
  * Helper to extract method name and slots from smallcaps

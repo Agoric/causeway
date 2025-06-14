@@ -1,6 +1,6 @@
 import mermaid from 'mermaid';
-import { Interaction } from './types/common';
-import { Vat } from './types/create-vat';
+import { Interaction } from 'types/common';
+import { Vat } from 'types/create-vat';
 
 // Convert string timestamp (1729570627.218393) to numeric timestamp
 export const parseTimestamp = (timestampStr: string) => {

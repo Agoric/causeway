@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import Neo4jSequenceDiagram from './Neo4jSequenceDiagram';
+import Neo4jSequenceDiagram from 'components/Neo4jSequenceDiagram';
 
 type Props = {
   onDiagramGenerated: (diagramCode: string) => void;

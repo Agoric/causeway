@@ -1,11 +1,22 @@
-import driver from '../../lib/neo4j';
+import { type Record } from 'neo4j-driver';
+import { type NextRequest } from 'next/server';
+import driver from '~/lib/neo4j';
 
-import type { NextApiRequest, NextApiResponse } from 'next';
+type RawInteraction = {
+  method: string;
+  sourceVat: string;
+  targetVat: string;
+  time: string;
+  type: string;
+};
 
-const handler = async (req: NextApiRequest, res: NextApiResponse) => {
+export const GET = async (request: NextRequest) => {
   const session = driver.session();
+
   try {
-    const { startTime, endTime } = req.query;
+    const searchParams = request.nextUrl.searchParams;
+    const endTime = searchParams.get('endTime');
+    const startTime = searchParams.get('startTime');
 
     const startTimestamp = parseFloat(startTime as string) || 0;
     const endTimestamp =
@@ -36,22 +47,20 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       ORDER BY n.time;
     `;
 
-    const messageResult = await session.run(messageQuery, {
+    const messageResult = await session.run<RawInteraction>(messageQuery, {
       startTime: startTimestamp,
       endTime: endTimestamp,
     });
-    const notifyResult = await session.run(notifyQuery, {
+    const notifyResult = await session.run<RawInteraction>(notifyQuery, {
       startTime: startTimestamp,
       endTime: endTimestamp,
     });
 
-    const format = (record: any) => ({
+    const format = (record: Record<RawInteraction>) => ({
+      method: record.get('method'),
       sourceVat: record.get('sourceVat'),
       targetVat: record.get('targetVat'),
-      method: record.get('method'),
-      time: record.get('time').toNumber
-        ? record.get('time').toNumber()
-        : record.get('time'),
+      time: record.get('time'),
       type: record.get('type'),
     });
 
@@ -60,21 +69,29 @@ const handler = async (req: NextApiRequest, res: NextApiResponse) => {
       ...notifyResult.records.map(format),
     ];
 
-    res.status(200).json({
-      vats: [],
-      interactions: allInteractions,
-      meta: {
-        startTime: startTimestamp,
-        endTime: endTimestamp,
-        count: allInteractions.length,
+    return new Response(
+      JSON.stringify({
+        interactions: allInteractions,
+        meta: {
+          startTime: startTimestamp,
+          endTime: endTimestamp,
+          count: allInteractions.length,
+        },
+        vats: [],
+      }),
+      {
+        status: 200,
       },
-    });
+    );
   } catch (error) {
     console.error('Error fetching interactions:', error);
-    res.status(500).json({ error: 'Failed to fetch interactions' });
+    return new Response(
+      JSON.stringify({ error: 'Failed to fetch interactions' }),
+      {
+        status: 500,
+      },
+    );
   } finally {
     await session.close();
   }
 };
-
-export default handler;

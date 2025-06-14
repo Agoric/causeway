@@ -21,4 +21,6 @@ const getDriver = () => {
   return driverInstance;
 };
 
-export default getDriver();
+const driver = getDriver();
+
+export default driver;

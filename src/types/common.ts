@@ -1,10 +1,10 @@
 import {
   Block,
   CosmicSwingsetBeginBlockLogEntry,
-} from './cosmic-swingset-block';
-import { CreateVatLogEntry, Vat } from './create-vat';
-import { DeliverLogEntry, Delivery } from './delivery';
-import { Syscall, SyscallLogEntry } from './syscall';
+} from 'types/cosmic-swingset-block';
+import { CreateVatLogEntry, Vat } from 'types/create-vat';
+import { DeliverLogEntry, Delivery } from 'types/delivery';
+import { Syscall, SyscallLogEntry } from 'types/syscall';
 
 type PromiseState = 'fulfilled' | 'rejected' | 'pending';
 

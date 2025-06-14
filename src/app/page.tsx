@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import './page.css';
-import LeftPane from './components/LeftPane';
-import MermaidDiagram from './components/MermaidDiagram';
+import 'index.css';
+import LeftPane from 'components/LeftPane';
+import MermaidDiagram from 'components/MermaidDiagram';
 
 const Page = () => {
   const [mermaidCode, setMermaidCode] = useState(`sequenceDiagram
