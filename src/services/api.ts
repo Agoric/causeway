@@ -9,11 +9,22 @@ export const checkHealth = async (): Promise<Record<string, unknown>> => {
   return data;
 };
 
-export const getVats = async (): Promise<Vat[]> => {
-  const response = await fetch(`${API_BASE}/vats`);
-  if (!response.ok) {
+export const getVats = async (
+  endTime?: number,
+  startTime?: number,
+): Promise<Vat[]> => {
+  let route = `${API_BASE}/vats?`;
+  route += [
+    endTime && `endTime=${endTime}`,
+    startTime && `startTime=${startTime}`,
+  ]
+    .filter(Boolean)
+    .join('&');
+
+  const response = await fetch(route);
+  if (!response.ok)
     throw new Error(`Error fetching vats: ${response.statusText}`);
-  }
+
   return await response.json();
 };
 

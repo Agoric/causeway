@@ -19,9 +19,10 @@ export type TrackedPromise = {
 };
 
 export type Interaction = {
+  method: string;
+  promiseId: string;
   sourceVat: string;
   targetVat: string;
-  method: string;
   time: number;
   type: string;
 };

@@ -48,7 +48,7 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
 
       // Fetch vats and interactions in parallel
       const [vats, interactionsData] = await Promise.all([
-        getVats(),
+        getVats(endTimestamp, startTimestamp),
         getInteractions(startTimestamp, endTimestamp),
       ]);
 

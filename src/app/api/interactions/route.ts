@@ -1,14 +1,7 @@
 import { type Record } from 'neo4j-driver';
 import { type NextRequest } from 'next/server';
 import driver from '~/lib/neo4j';
-
-type RawInteraction = {
-  method: string;
-  sourceVat: string;
-  targetVat: string;
-  time: string;
-  type: string;
-};
+import { Interaction } from 'types/common';
 
 export const GET = async (request: NextRequest) => {
   const session = driver.session();
@@ -23,41 +16,41 @@ export const GET = async (request: NextRequest) => {
       parseFloat(endTime as string) || Math.floor(Date.now() / 1000);
 
     const messageQuery = `
-      MATCH (m:Message)-[call:CALL]->(target:Vat),
-            (caller:Vat)-[:CALLED_BY]->(m)
+      MATCH (m:Message)-[call:CALL]->(target:Vat), (caller:Vat)-[:CALLED_BY]->(m)
       WHERE m.time >= $startTime AND m.time <= $endTime
       RETURN caller.vatID  AS sourceVat,
-            target.vatID  AS targetVat,
-            m.method as method,
-            m.time as time,
-            'message' as type
+        m.method      AS method,
+        m.result      AS promiseId,
+        m.time        AS time,
+        'message'     AS type,
+        target.vatID  AS targetVat
       ORDER BY m.time
     `;
 
     const notifyQuery = `
-      MATCH  (n:Notify)-[:CALLED_BY]->(caller:Vat),
-            (n)-[:CALL]->(target:Vat) 
-      WHERE  n.time >= $startTime
-        AND  n.time <= $endTime
+      MATCH (n:Notify)-[:CALLED_BY]->(caller:Vat), (n)-[:CALL]->(target:Vat) 
+      WHERE  n.time >= $startTime AND  n.time <= $endTime
       RETURN caller.vatID  AS sourceVat,
-            target.vatID  AS targetVat,
-            n.method      AS method,
-            n.time        AS time,
-            'notify'      AS type
+        n.kpid        AS promiseId,
+        n.method      AS method,
+        n.time        AS time,
+        'notify'      AS type,
+        target.vatID  AS targetVat
       ORDER BY n.time;
     `;
 
-    const messageResult = await session.run<RawInteraction>(messageQuery, {
+    const messageResult = await session.run<Interaction>(messageQuery, {
       startTime: startTimestamp,
       endTime: endTimestamp,
     });
-    const notifyResult = await session.run<RawInteraction>(notifyQuery, {
+    const notifyResult = await session.run<Interaction>(notifyQuery, {
       startTime: startTimestamp,
       endTime: endTimestamp,
     });
 
-    const format = (record: Record<RawInteraction>) => ({
+    const format = (record: Record<Interaction>) => ({
       method: record.get('method'),
+      promiseId: record.get('promiseId'),
       sourceVat: record.get('sourceVat'),
       targetVat: record.get('targetVat'),
       time: record.get('time'),

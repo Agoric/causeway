@@ -242,7 +242,7 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
   });
 
   interactions.forEach((interaction, index) => {
-    const { sourceVat, targetVat, method, type, time } = interaction;
+    const { method, promiseId, sourceVat, targetVat, time, type } = interaction;
 
     if (!sourceVat || !targetVat) return;
 
@@ -275,35 +275,35 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
     // Handle normal vat-to-vat or system-to-vat interactions
     else {
       let safeSourceVat;
-      if (sourceVat === 'system') {
-        safeSourceVat = 'System';
-      } else if (vatIds.has(sourceVat)) {
-        safeSourceVat = getMermaidId(sourceVat);
-      } else {
-        return;
-      }
-
       let safeTargetVat;
-      if (targetVat === 'system') {
-        safeTargetVat = 'System';
-      } else if (vatIds.has(targetVat)) {
-        safeTargetVat = getMermaidId(targetVat);
-      } else {
-        return;
-      }
+
+      if (sourceVat === 'system') safeSourceVat = 'System';
+      else if (vatIds.has(sourceVat)) safeSourceVat = getMermaidId(sourceVat);
+      else return;
+
+      if (targetVat === 'system') safeTargetVat = 'System';
+      else if (vatIds.has(targetVat)) safeTargetVat = getMermaidId(targetVat);
+      else return;
 
       let arrow = '->>+';
-      if (type === 'notify') {
-        arrow = '-->>+';
-      } else if (type === 'message') {
-        arrow = '->>+';
-      }
+      if (type === 'notify') arrow = '-->>+';
+      else if (type === 'message') arrow = '->>+';
 
       let methodDisplay =
         method && method.length > 25 ? method.substring(0, 25) + '...' : method;
 
       methodDisplay = methodDisplay.replace(/[^\w\s\-.,;:()]/g, '_');
-      result += `    ${safeSourceVat}${arrow}${safeTargetVat}: ${methodDisplay}()\n`;
+      result += `    ${safeSourceVat}${arrow}${safeTargetVat}: ${methodDisplay}() [${promiseId}]\n`;
+      [
+        '    ',
+        safeSourceVat,
+        arrow,
+        safeTargetVat,
+        ': ',
+        methodDisplay,
+        '()',
+        ` [${promiseId}]`,
+      ].filter(Boolean).join('')
     }
 
     // Add logical breaks every 5 interactions for better readability

@@ -6,6 +6,7 @@ type Props = {
 };
 const LeftPane = ({ onDiagramGenerated }: Props) => {
   const [activeTab, setActiveTab] = useState<'view' | 'import'>('view');
+
   return (
     <div className="left-pane-content">
       <div className="tabs">
