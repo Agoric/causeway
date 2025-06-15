@@ -3,34 +3,35 @@ import mermaid from 'mermaid';
 import { renderDiagram } from 'helpers';
 
 mermaid.initialize({
-  startOnLoad: true,
-  theme: 'default',
-  logLevel: 'error',
-  securityLevel: 'loose',
   flowchart: {
     curve: 'basis',
     diagramPadding: 8,
   },
-  sequence: {
-    diagramMarginX: 50,
-    diagramMarginY: 50,
-    boxMargin: 10,
-    noteMargin: 10,
-    messageMargin: 60,
-    mirrorActors: false,
-    bottomMarginAdj: 20,
-    useMaxWidth: false,
-    rightAngles: false,
-    showSequenceNumbers: false,
-    actorFontSize: 16,
-    noteFontSize: 14,
-    messageFontSize: 16,
-    width: 150,
-    height: 65,
-    wrap: true,
-  },
   fontFamily: 'monospace',
   fontSize: 16,
+  logLevel: 'error',
+  startOnLoad: true,
+  theme: 'default',
+  securityLevel: 'loose',
+  sequence: {
+    arrowMarkerAbsolute: true,
+    actorFontSize: 16,
+    bottomMarginAdj: 0,
+    boxMargin: 8,
+    diagramMarginX: 0,
+    diagramMarginY: 8,
+    height: 65,
+    messageFontSize: 16,
+    messageMargin: 60,
+    mirrorActors: false,
+    noteFontSize: 14,
+    noteMargin: 8,
+    rightAngles: false,
+    showSequenceNumbers: false,
+    useMaxWidth: true,
+    width: 150,
+    wrap: true,
+  },
 });
 
 type MermaidDiagramProps = {
@@ -39,7 +40,6 @@ type MermaidDiagramProps = {
 
 const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
   const mermaidRef = useRef<HTMLDivElement | null>(null);
-  const containerRef = useRef(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [pages, setPages] = useState<string[]>([]);
   const [totalPages, setTotalPages] = useState(0);
@@ -47,7 +47,7 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
   // Render the current page diagram
   useEffect(() => {
     renderDiagram({
-      mermaidRef: mermaidRef as React.RefObject<HTMLDivElement>,
+      mermaidRef: mermaidRef,
       pages,
       currentPage,
     });
@@ -103,9 +103,7 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
           </button>
         </div>
       )}
-      <div className="mermaid-container" ref={containerRef}>
-        <div ref={mermaidRef} className="mermaid-output" />
-      </div>
+      <div ref={mermaidRef} className="mermaid-container" />
     </div>
   );
 };

@@ -64,7 +64,6 @@ code {
   width: 100%;
   height: 100%;
   display: flex;
-  justify-content: center;
   align-items: flex-start;
   overflow: auto;
 }
@@ -75,10 +74,7 @@ code {
 }
 
 .mermaid-output svg {
-  max-width: none !important; /* Allow SVG to be larger than container */
-  width: 120% !important; /* Let the SVG determine its width */
-  height: auto !important;
-  min-width: 800px; /* Minimum width */
+  flex-shrink: 0;
 }
 
 /* Fix Mermaid styles for sequence diagrams */

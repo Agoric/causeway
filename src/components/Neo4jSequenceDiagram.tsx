@@ -94,6 +94,10 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
     }
   };
 
+  const getSanitizedInteractionsPerPage = (
+    interactionsPerPage: string | null,
+  ) => Math.max(5, Math.min(50, Number(interactionsPerPage) || 20));
+
   useEffect(() => {
     if (!state.connectionHealthy) return;
 
@@ -101,6 +105,9 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
       ...prevState,
       blockHeight: searchParams.get('blockHeight') || '',
       endTime: searchParams.get('endTime') || '',
+      interactionsPerPage: getSanitizedInteractionsPerPage(
+        searchParams.get('interactionsPerPage'),
+      ),
       startTime: searchParams.get('startTime') || '',
     }));
     fetchData();
@@ -193,10 +200,8 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
           onChange={({ target: { value: interactionsPerPage } }) =>
             setState((prevState) => ({
               ...prevState,
-              interactionsPerPage: Math.max(
-                5,
-                Math.min(50, Number(interactionsPerPage) || 20),
-              ),
+              interactionsPerPage:
+                getSanitizedInteractionsPerPage(interactionsPerPage),
             }))
           }
           type="number"
@@ -211,7 +216,7 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
       <button
         onClick={() =>
           router.push(
-            `/?blockHeight=${state.blockHeight}&endTime=${state.endTime}&startTime=${state.startTime}`,
+            `/?blockHeight=${state.blockHeight}&endTime=${state.endTime}&interactionsPerPage=${state.interactionsPerPage}&startTime=${state.startTime}`,
           )
         }
         disabled={state.formDisabled}
