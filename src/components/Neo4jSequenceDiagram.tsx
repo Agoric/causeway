@@ -120,16 +120,16 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
         setState((prevState) => ({
           ...prevState,
           connectionHealthy: true,
-          connectionStatus: 'API server connected to Neo4j database',
           formDisabled: false,
+          status: 'API server connected to Neo4j database',
         }));
       } catch (error) {
         console.error(error);
         setState((prevState) => ({
           ...prevState,
           connectionHealthy: false,
-          connectionStatus: 'Warning: Cannot connect to API server',
           formDisabled: true,
+          status: 'Warning: Cannot connect to API server',
         }));
       }
     };
