@@ -160,7 +160,7 @@ import { auth, driver as createDriver, int as neoInt } from 'neo4j-driver';
  * } VatSyscallObject
  */
 
-const SLOG_TYPES = {
+export const SLOG_TYPES = {
   CLIST: 'clist',
   CONSOLE: 'console',
   COSMIC_SWINGSET: {
@@ -473,6 +473,6 @@ export const makeSlogSender = async (options) => {
 
   return Object.assign(slogSender, {
     forceFlush: () => promiseChain,
-    shutdown: session.close,
+    shutdown: () => promiseChain.then(() => driver.close()),
   });
 };

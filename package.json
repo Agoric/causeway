@@ -40,7 +40,6 @@
     "dev": "next dev",
     "lint": "prettier --check .",
     "lint:fix": "prettier --write .",
-    "slogs:import": "vite-node scripts/slog-to-neo4j.ts scripts/a3p.slog",
     "slogs:import-static": "vite-node scripts/slog-to-neo4j.ts scripts/slogs.json",
     "start": "next start",
     "start:chain": "bash scripts/init.sh && docker compose up -d"
