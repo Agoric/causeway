@@ -12,6 +12,12 @@ type Props = {
   onDiagramGenerated: (diagramCode: string) => void;
 };
 
+const FORM_GROUP_CLASSES = 'flex flex-col gap-y-1';
+const FORM_HELP_CLASSES = 'text-gray-D600 text-xs';
+const FORM_INPUT_CLASSES =
+  'border border-gray-L300 border-solid no-outline p-2 rounded-sm w-full';
+const FORM_LABEL_CLASSES = 'font-bold';
+
 const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
   const now = Date.now() / 1000;
   const router = useRouter();
@@ -138,63 +144,61 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
   }, []);
 
   return (
-    <div className="neo4j-form">
+    <div className="flex flex-col gap-y-3">
       <h3>Generate Sequence Diagram</h3>
 
-      <div className="form-group">
-        <label>Block Height:</label>
-        <div className="input-with-actions">
-          <input
-            onChange={({ target: { value: blockHeight } }) =>
-              (!blockHeight || Number(blockHeight)) &&
-              setState((prevState) => ({ ...prevState, blockHeight }))
-            }
-            type="text"
-            value={state.blockHeight}
-          />
-        </div>
-        <small className="form-text">
-          Default start time is pre-filled for convenience
-        </small>
-      </div>
-
-      <div className="form-group">
-        <label>Start Time (Unix timestamp):</label>
-        <div className="input-with-actions">
-          <input
-            onChange={({ target: { value: startTime } }) =>
-              (!startTime || Number(startTime)) &&
-              setState((prevState) => ({ ...prevState, startTime }))
-            }
-            value={state.startTime}
-            type="text"
-          />
-        </div>
-        <small className="form-text">
-          Default start time is pre-filled for convenience
-        </small>
-      </div>
-
-      <div className="form-group">
-        <label>End Time (Unix timestamp):</label>
-        <div className="input-with-actions">
-          <input
-            onChange={({ target: { value: endTime } }) =>
-              (!endTime || Number(endTime)) &&
-              setState((prevState) => ({ ...prevState, endTime }))
-            }
-            value={state.endTime}
-            type="text"
-          />
-        </div>
-        <small className="form-text">
-          Default end time is pre-filled for convenience
-        </small>
-      </div>
-
-      <div className="form-group">
-        <label>Interactions Per Page:</label>
+      <div className={FORM_GROUP_CLASSES}>
+        <p className={FORM_LABEL_CLASSES}>Block Height:</p>
         <input
+          className={FORM_INPUT_CLASSES}
+          onChange={({ target: { value: blockHeight } }) =>
+            (!blockHeight || Number(blockHeight)) &&
+            setState((prevState) => ({ ...prevState, blockHeight }))
+          }
+          type="text"
+          value={state.blockHeight}
+        />
+        <span className={FORM_HELP_CLASSES}>
+          Default start time is pre-filled for convenience
+        </span>
+      </div>
+
+      <div className={FORM_GROUP_CLASSES}>
+        <p className={FORM_LABEL_CLASSES}>Start Time (Unix timestamp):</p>
+        <input
+          className={FORM_INPUT_CLASSES}
+          onChange={({ target: { value: startTime } }) =>
+            (!startTime || Number(startTime)) &&
+            setState((prevState) => ({ ...prevState, startTime }))
+          }
+          value={state.startTime}
+          type="text"
+        />
+        <span className={FORM_HELP_CLASSES}>
+          Default start time is pre-filled for convenience
+        </span>
+      </div>
+
+      <div className={FORM_GROUP_CLASSES}>
+        <p className={FORM_LABEL_CLASSES}>End Time (Unix timestamp):</p>
+        <input
+          className={FORM_INPUT_CLASSES}
+          onChange={({ target: { value: endTime } }) =>
+            (!endTime || Number(endTime)) &&
+            setState((prevState) => ({ ...prevState, endTime }))
+          }
+          value={state.endTime}
+          type="text"
+        />
+        <span className={FORM_HELP_CLASSES}>
+          Default end time is pre-filled for convenience
+        </span>
+      </div>
+
+      <div className={FORM_GROUP_CLASSES}>
+        <p className={FORM_LABEL_CLASSES}>Interactions Per Page:</p>
+        <input
+          className={FORM_INPUT_CLASSES}
           max="50"
           min="5"
           onChange={({ target: { value: interactionsPerPage } }) =>
@@ -207,13 +211,14 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
           type="number"
           value={state.interactionsPerPage}
         />
-        <small className="form-text">
+        <span className={FORM_HELP_CLASSES}>
           Number of interactions to show per page (5-50). Use lower values for
           better readability.
-        </small>
+        </span>
       </div>
 
       <button
+        className='base-button'
         onClick={() =>
           router.push(
             `/?blockHeight=${state.blockHeight}&endTime=${state.endTime}&interactionsPerPage=${state.interactionsPerPage}&startTime=${state.startTime}`,
@@ -226,19 +231,19 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
 
       {state.status && (
         <div
-          className={`status-message ${
+          className={`border-0 border-l-4 border-solid p-2 whitespace-pre-line ${
             state.status.includes('error') || state.status.includes('Error')
-              ? 'error'
-              : ''
+              ? 'bg-red-25 border-red-500 text-red-500'
+              : 'bg-gray-L50 border-blue-500'
           }`}
         >
           {state.status}
         </div>
       )}
 
-      <div className="troubleshooting">
-        <h4>Troubleshooting</h4>
-        <ul>
+      <div className="bg-gray-L50 flex flex-col gap-y-3 p-3 rounded-sm">
+        <h4 className='font-semibold text-gray-D1200'>Troubleshooting</h4>
+        <ul className='pl-5 list-disc'>
           <li>
             Make sure the API server is running (default:{' '}
             <code>http://localhost:3001</code>)
@@ -248,8 +253,7 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
             Times in the database are Unix timestamps (e.g., 1629570627.218393)
           </li>
           <li>
-            Try adjusting the &quot;Interactions Per Page&quot; value to break
-            diagrams into manageable pages
+            {`Try adjusting the "Interactions Per Page" value to break diagrams into manageable pages`}
           </li>
           <li>If you encounter errors, check the server logs for details</li>
         </ul>

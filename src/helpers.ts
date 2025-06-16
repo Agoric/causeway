@@ -369,7 +369,7 @@ export const renderDiagram = async ({
     const svgElement = mermaidRef.current.querySelector('svg');
 
     if (svgElement) {
-      svgElement.style.maxWidth = 'none';
+      svgElement.classList.add('flex-shrink-0', '!max-w-none');
       const textElements = svgElement.querySelectorAll('text');
       textElements.forEach((text) => {
         const currentSize = parseFloat(text.getAttribute('font-size') || '12');
@@ -381,12 +381,11 @@ export const renderDiagram = async ({
   } catch (error) {
     console.error('Mermaid rendering error:', error);
     mermaidRef.current.innerHTML = `
-            <div class="error" style="color: red; padding: 10px; border: 1px solid red; border-radius: 4px; margin: 10px 0;">
-              <strong>Error rendering diagram:</strong><br>
-              ${error.message}<br><br>
-              Check the Mermaid syntax in the editor below.
-            </div>
-          `;
+      <div class="border border-red-500 border-solid flex flex-col gap-y-3 p-3 rounded-sm text-red-500">
+        <strong>Error rendering diagram:</strong>
+        <p>${error.message}</p>
+      </div>
+    `;
   }
 };
 

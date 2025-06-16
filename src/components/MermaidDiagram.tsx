@@ -18,7 +18,7 @@ mermaid.initialize({
     actorFontSize: 16,
     bottomMarginAdj: 0,
     boxMargin: 8,
-    diagramMarginX: 0,
+    diagramMarginX: 8,
     diagramMarginY: 8,
     height: 65,
     messageFontSize: 16,
@@ -81,29 +81,32 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
   };
 
   return (
-    <div className="mermaid-wrapper">
+    <div className="flex flex-col gap-y-4 grow p-5 shrink w-full">
       {totalPages > 1 && (
-        <div className="pagination-controls">
+        <div className="flex items-center justify-between px-3">
           <button
-            onClick={prevPage}
-            disabled={currentPage === 0}
             className="pagination-button"
+            disabled={currentPage === 0}
+            onClick={prevPage}
           >
             ← Previous Page
           </button>
-          <span className="page-indicator">
-            Page {currentPage + 1} of {totalPages}
+          <span className="font-bold px-4">
+            {`Page ${currentPage + 1} of ${totalPages}`}
           </span>
           <button
-            onClick={nextPage}
-            disabled={currentPage === totalPages - 1}
             className="pagination-button"
+            disabled={currentPage === totalPages - 1}
+            onClick={nextPage}
           >
             Next Page →
           </button>
         </div>
       )}
-      <div ref={mermaidRef} className="mermaid-container" />
+      <div
+        ref={mermaidRef}
+        className="bg-white border border-gray-L300 border-solid grow no-scrollbar overflow-scroll p-4 rounded-sm shrink"
+      />
     </div>
   );
 };

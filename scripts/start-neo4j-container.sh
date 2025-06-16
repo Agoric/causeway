@@ -5,9 +5,16 @@
 # This script should only be used for starting
 # solely the neo4j container (or connecting an
 # existing container with it)
+# In this case, you should either pass
+# --publish "7474:7474" --publish "7687:7687"
+# to the script to make the ports available on the
+# host machine, or pass
+# --network "container:<CONTAINER ID>"
+# to make it part of an existing container network
 
 set -o errexit
 
+ARGS=("$@")
 CONTAINER_NAME="neo4j-database"
 IMAGE_NAME="neo4j"
 IMAGE_TAG="5.26.8-community-bullseye"
@@ -34,9 +41,8 @@ run_container() {
             --detach \
             --env "NEO4J_AUTH=neo4j/secretpassword" \
             --name "$CONTAINER_NAME" \
-            --publish "7474:7474" \
-            --publish "7687:7687" \
             --volume "$HOME/$IMAGE_NAME/data":/data \
+            "${ARGS[@]}" \
             "$IMAGE_NAME:$IMAGE_TAG"
     else
         if test "$(echo "$containerInformation" | jq --raw-output '.State')" == "exited"; then

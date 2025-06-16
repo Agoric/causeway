@@ -17,13 +17,11 @@ const Page = () => {
     setMermaidCode(diagramCode);
 
   return (
-    <div className="app">
-      <div className="left-pane">
+    <div className="flex flex-col h-screen sm:flex-row overflow-hidden w-screen">
+      <div className="bg-gray-L100 border-0 border-b border-gray-L300 flex flex-col sm:border-b-0 sm:border-r border-solid sm:max-w-xs p-0 w-full">
         <LeftPane onDiagramGenerated={handleDiagramGenerated} />
       </div>
-      <div className="canvas-pane">
-        <MermaidDiagram code={mermaidCode} />
-      </div>
+      <MermaidDiagram code={mermaidCode} />
     </div>
   );
 };
