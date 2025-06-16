@@ -182,8 +182,7 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
         method && method.length > 25 ? method.substring(0, 25) + '...' : method;
 
       methodDisplay = methodDisplay.replace(/[^\w\s\-.,;:()]/g, '_');
-      result += `    ${safeSourceVat}${arrow}${safeTargetVat}: ${methodDisplay}() [${promiseId}]\n`;
-      [
+      result += [
         '    ',
         safeSourceVat,
         arrow,
@@ -191,7 +190,8 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
         ': ',
         methodDisplay,
         '()',
-        ` [${promiseId}]`,
+        promiseId && ` [${promiseId}]`,
+        '\n',
       ]
         .filter(Boolean)
         .join('');
@@ -261,9 +261,6 @@ export const generateMermaidSequenceDiagram = (
       .substring(0, 19);
 
     let diagram = 'sequenceDiagram\n';
-    diagram += `    title Page ${
-      pageIndex + 1
-    }/${totalPages}: ${fromTime} to ${toTime}\n`;
 
     diagram += generateParticipants(interactions, vats);
 
@@ -314,24 +311,6 @@ const generateSinglePageDiagram = (
 ) => {
   let diagram = 'sequenceDiagram\n';
 
-  if (interactions.length > 0) {
-    const fromTime = new Date(
-      interactions[0].time * (interactions[0].time > 10000000000 ? 1 : 1000),
-    )
-      .toISOString()
-      .replace('T', ' ')
-      .substring(0, 19);
-    const toTime = new Date(
-      interactions[interactions.length - 1].time *
-        (interactions[interactions.length - 1].time > 10000000000 ? 1 : 1000),
-    )
-      .toISOString()
-      .replace('T', ' ')
-      .substring(0, 19);
-
-    diagram += `    title Sequence Diagram: ${fromTime} to ${toTime}\n`;
-  }
-
   diagram += generateParticipants(interactions, vats);
   diagram += generateInteractions(interactions, vats);
 
@@ -361,7 +340,7 @@ export const renderDiagram = async ({
   try {
     const { svg } = await mermaid.render(
       'mermaid-svg',
-      pages[currentPage].replace(/title .*/, () => ''),
+      pages[currentPage],
       mermaidRef.current,
     );
     mermaidRef.current.innerHTML = svg;
