@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import 'index.css';
 import InteractionProvider from 'context/interactions';
 import LeftPane from 'components/LeftPane';
@@ -9,7 +10,9 @@ const Page = () => (
   <InteractionProvider>
     <div className="flex flex-col h-screen sm:flex-row overflow-hidden w-screen">
       <LeftPane />
-      <MermaidDiagram />
+      <Suspense>
+        <MermaidDiagram />
+      </Suspense>
     </div>
   </InteractionProvider>
 );

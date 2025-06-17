@@ -1,0 +1,21 @@
+diff --git a/dist/sequenceDiagram-704730f1.js b/dist/sequenceDiagram-704730f1.js
+index 1263928..59a9afc 100644
+--- a/dist/sequenceDiagram-704730f1.js
++++ b/dist/sequenceDiagram-704730f1.js
+@@ -1681,0 +1681,4 @@     }
++
++    if (textData.sequenceIndex)
++      textElem.attr("messageNumber", textData.sequenceIndex);
++
+diff --git a/dist/sequenceDiagram-704730f1.js b/dist/sequenceDiagram-704730f1.js
+index 1263928..59a9afc 100644
+--- a/dist/sequenceDiagram-704730f1.js
++++ b/dist/sequenceDiagram-704730f1.js
+@@ -2420,0 +2420,1 @@   textObj.tspan = false;
++  textObj.sequenceIndex = sequenceIndex;
+diff --git a/dist/sequenceDiagram-704730f1.js b/dist/sequenceDiagram-704730f1.js
+index 1263928..59a9afc 100644
+--- a/dist/sequenceDiagram-704730f1.js
++++ b/dist/sequenceDiagram-704730f1.js
+@@ -2458,0 +2458,1 @@   line.style("fill", "none");
++  line.attr("messageLineNumber", sequenceIndex);

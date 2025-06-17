@@ -5,7 +5,7 @@ node_modules/
 .env
 
 # Yarn
-.yarn/
+.yarn/install-state.gz
 .pnp.*
 
 # Build output
