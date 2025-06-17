@@ -21,6 +21,7 @@ const config: Config = {
           L100: '#F3F4F6',
           L200: '#E5E7EB',
           L300: '#D1D5DB',
+          L900: '#0C1322',
         },
         green: {
           50: '#F3FCF6',

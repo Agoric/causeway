@@ -19,10 +19,15 @@ export type TrackedPromise = {
 };
 
 export type Interaction = {
+  argSize: number;
+  blockHeight: number;
+  crankNum: number;
+  elapsed: number;
   method: string;
   promiseId: string;
   sourceVat: string;
   targetVat: string;
+  targetId: string;
   time: number;
   type: string;
 };

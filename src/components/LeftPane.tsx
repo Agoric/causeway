@@ -1,15 +1,10 @@
 import { Suspense, useState } from 'react';
 import Neo4jSequenceDiagram from 'components/Neo4jSequenceDiagram';
-
-type Props = {
-  onDiagramGenerated: (diagramCode: string) => void;
-};
-
-const LeftPane = ({ onDiagramGenerated }: Props) => {
+const LeftPane = () => {
   const [activeTab, setActiveTab] = useState<'view' | 'import'>('view');
 
   return (
-    <>
+    <div className="bg-gray-L100 border-0 border-b border-gray-L300 flex flex-col flex-shrink-0 sm:border-b-0 sm:border-r border-solid sm:max-w-xs p-0 w-full">
       <div className="border-0 border-b border-gray-L300 border-solid flex">
         <button
           className={`border-0 border-b-2 border-solid cursor-pointer duration-300 flex font-bold grow hover:bg-gray-L200 justify-center p-3 shrink transition-all ${
@@ -25,10 +20,10 @@ const LeftPane = ({ onDiagramGenerated }: Props) => {
 
       <div className="no-scrollbar p-4 overflow-y-scroll">
         <Suspense>
-          <Neo4jSequenceDiagram onDiagramGenerated={onDiagramGenerated} />
+          <Neo4jSequenceDiagram />
         </Suspense>
       </div>
-    </>
+    </div>
   );
 };
 

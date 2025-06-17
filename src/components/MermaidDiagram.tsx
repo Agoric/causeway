@@ -1,6 +1,12 @@
-import { useState, useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
-import { renderDiagram } from 'helpers';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { Context as InteractionContext } from 'context/interactions';
+import {
+  generateMermaidSequenceDiagram,
+  getSanitizedInteractionsPerPage,
+  renderDiagram,
+} from 'helpers';
 
 mermaid.initialize({
   flowchart: {
@@ -20,10 +26,9 @@ mermaid.initialize({
     boxMargin: 8,
     diagramMarginX: 8,
     diagramMarginY: 8,
-    height: 65,
     messageFontSize: 16,
     messageMargin: 60,
-    mirrorActors: false,
+    mirrorActors: true,
     noteFontSize: 14,
     noteMargin: 8,
     rightAngles: false,
@@ -38,56 +43,69 @@ type MermaidDiagramProps = {
   code: string;
 };
 
-const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
+const MermaidDiagram = () => {
+  const { interactions, vats } = useContext(InteractionContext);
+  const pathName = usePathname();
   const mermaidRef = useRef<HTMLDivElement | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [pages, setPages] = useState<string[]>([]);
-  const [totalPages, setTotalPages] = useState(0);
 
-  // Render the current page diagram
+  const _currentPage = Number(searchParams.get('currentPage')) || 1;
+  const routerBlockHeight = searchParams.get('blockHeight') || '';
+  const routerEndTime = searchParams.get('endTime') || '';
+  const routerInteractionsPerPage =
+    searchParams.get('interactionsPerPage') || '';
+  const routerStartTime = searchParams.get('startTime') || '';
+  const totalPages = pages.length;
+
+  const currentPage = _currentPage - 1;
+
+  const interactionsPerPage = getSanitizedInteractionsPerPage(routerInteractionsPerPage)
+
+  const changeCurrentPage = (currentPage: number) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+    current.set('currentPage', String(currentPage + 1));
+    const search = current.toString();
+    router.push(`${pathName}?${search}`);
+  };
+
   useEffect(() => {
     renderDiagram({
+      currentPage: Math.max(Math.min(currentPage, totalPages - 1), 0),
+      interactions,
+      interactionsPerPage,
       mermaidRef: mermaidRef,
       pages,
-      currentPage,
     });
-  }, [pages, currentPage]);
+  }, [currentPage, pages.length]);
 
   useEffect(() => {
-    if (code) {
-      if (code.includes('%%DIAGRAM_PAGE_BREAK%%')) {
-        const diagramPages = code.split('%%DIAGRAM_PAGE_BREAK%%');
-        setPages(diagramPages);
-        setTotalPages(diagramPages.length);
-        setCurrentPage(0);
-      } else {
-        setPages([code]);
-        setTotalPages(1);
-        setCurrentPage(0);
-      }
-    }
-  }, [code]);
+    const code = generateMermaidSequenceDiagram(
+      interactions,
+      vats,
+      interactionsPerPage,
+    );
 
-  const nextPage = () => {
-    if (currentPage < totalPages - 1) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const prevPage = () => {
-    if (currentPage > 0) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
+    if (code)
+      setPages(
+        code.includes('%%DIAGRAM_PAGE_BREAK%%')
+          ? code.split('%%DIAGRAM_PAGE_BREAK%%')
+          : [code],
+      );
+  }, [interactions, routerBlockHeight, routerEndTime, routerStartTime, vats]);
 
   return (
-    <div className="flex flex-col gap-y-4 grow p-5 shrink w-full">
+    <div
+      className="flex flex-col gap-y-4 grow p-5 shrink w-full"
+      style={{ maxWidth: 'calc(100% - 20rem)' }}
+    >
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-3">
           <button
             className="pagination-button"
-            disabled={currentPage === 0}
-            onClick={prevPage}
+            disabled={!currentPage}
+            onClick={() => currentPage && changeCurrentPage(currentPage - 1)}
           >
             ← Previous Page
           </button>
@@ -97,7 +115,9 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
           <button
             className="pagination-button"
             disabled={currentPage === totalPages - 1}
-            onClick={nextPage}
+            onClick={() =>
+              currentPage < totalPages - 1 && changeCurrentPage(currentPage + 1)
+            }
           >
             Next Page →
           </button>
@@ -105,7 +125,7 @@ const MermaidDiagram = ({ code }: MermaidDiagramProps) => {
       )}
       <div
         ref={mermaidRef}
-        className="bg-white border border-gray-L300 border-solid grow no-scrollbar overflow-scroll p-4 rounded-sm shrink"
+        className="bg-white border border-gray-L300 border-solid grow max-w-full no-scrollbar overflow-scroll p-4 rounded-sm shrink"
       />
     </div>
   );

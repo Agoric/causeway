@@ -1,16 +1,15 @@
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useContext, useState, useEffect } from 'react';
+import { Context as InteractionContext } from 'context/interactions';
 import {
   checkHealth,
   getVats,
   getInteractions,
   sanitizeInteractions,
 } from 'services/api';
-import { generateMermaidSequenceDiagram, parseTimestamp } from 'helpers';
+import { getSanitizedInteractionsPerPage, parseTimestamp } from 'helpers';
 
-type Props = {
-  onDiagramGenerated: (diagramCode: string) => void;
-};
+const EXTRACT_VAT_ID_REGEX = /^v([0-9]*)$/;
 
 const FORM_GROUP_CLASSES = 'flex flex-col gap-y-1';
 const FORM_HELP_CLASSES = 'text-gray-D600 text-xs';
@@ -18,8 +17,9 @@ const FORM_INPUT_CLASSES =
   'border border-gray-L300 border-solid no-outline p-2 rounded-sm w-full';
 const FORM_LABEL_CLASSES = 'font-bold';
 
-const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
+const Neo4jSequenceDiagram = () => {
   const now = Date.now() / 1000;
+  const { setData } = useContext(InteractionContext);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [state, setState] = useState<{
@@ -40,6 +40,12 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
     status: '',
   });
 
+  const routerBlockHeight = searchParams.get('blockHeight') || '';
+  const routerEndTime = searchParams.get('endTime') || '';
+  const routerInteractionsPerPage =
+    searchParams.get('interactionsPerPage') || '';
+  const routerStartTime = searchParams.get('startTime') || '';
+
   const fetchData = async () => {
     setState((prevState) => ({
       ...prevState,
@@ -49,9 +55,12 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
 
     try {
       const blockHeight = searchParams.get('blockHeight');
-      const startTimestamp = parseTimestamp(searchParams.get('startTime')) ?? 0;
       const endTimestamp =
         parseTimestamp(searchParams.get('endTime')) ?? Math.floor(now);
+      const interactionsPerPage = getSanitizedInteractionsPerPage(
+        routerInteractionsPerPage,
+      );
+      const startTimestamp = parseTimestamp(searchParams.get('startTime')) ?? 0;
 
       const [vats, interactionsData] = await Promise.all([
         getVats({
@@ -69,16 +78,17 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
       const allInteractions = interactionsData.interactions;
 
       const processedInteractions = sanitizeInteractions(allInteractions);
-
-      const diagram = generateMermaidSequenceDiagram(
+      setData(
         processedInteractions,
-        vats,
-        state.interactionsPerPage,
+        vats.sort(
+          ({ vatID: firstVatID }, { vatID: secondVatID }) =>
+            Number(EXTRACT_VAT_ID_REGEX.exec(firstVatID)![1]) -
+            Number(EXTRACT_VAT_ID_REGEX.exec(secondVatID)![1]),
+        ),
       );
-      onDiagramGenerated(diagram);
 
       const pageCount = Math.ceil(
-        processedInteractions.length / state.interactionsPerPage,
+        processedInteractions.length / interactionsPerPage,
       );
       const pagesInfo = pageCount > 1 ? ` Split into ${pageCount} pages.` : '';
 
@@ -100,24 +110,26 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
     }
   };
 
-  const getSanitizedInteractionsPerPage = (
-    interactionsPerPage: string | null,
-  ) => Math.max(5, Math.min(50, Number(interactionsPerPage) || 20));
-
   useEffect(() => {
     if (!state.connectionHealthy) return;
 
     setState((prevState) => ({
       ...prevState,
-      blockHeight: searchParams.get('blockHeight') || '',
-      endTime: searchParams.get('endTime') || '',
+      blockHeight: routerBlockHeight,
+      endTime: routerEndTime,
       interactionsPerPage: getSanitizedInteractionsPerPage(
-        searchParams.get('interactionsPerPage'),
+        routerInteractionsPerPage,
       ),
-      startTime: searchParams.get('startTime') || '',
+      startTime: routerStartTime,
     }));
     fetchData();
-  }, [searchParams, state.connectionHealthy]);
+  }, [
+    routerBlockHeight,
+    routerEndTime,
+    routerInteractionsPerPage,
+    routerStartTime,
+    state.connectionHealthy,
+  ]);
 
   useEffect(() => {
     const checkApiHealth = async () => {
@@ -218,10 +230,10 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
       </div>
 
       <button
-        className='base-button'
+        className="base-button"
         onClick={() =>
           router.push(
-            `/?blockHeight=${state.blockHeight}&endTime=${state.endTime}&interactionsPerPage=${state.interactionsPerPage}&startTime=${state.startTime}`,
+            `/?blockHeight=${state.blockHeight}&currentPage=0&endTime=${state.endTime}&interactionsPerPage=${state.interactionsPerPage}&startTime=${state.startTime}`,
           )
         }
         disabled={state.formDisabled}
@@ -242,8 +254,8 @@ const Neo4jSequenceDiagram = ({ onDiagramGenerated }: Props) => {
       )}
 
       <div className="bg-gray-L50 flex flex-col gap-y-3 p-3 rounded-sm">
-        <h4 className='font-semibold text-gray-D1200'>Troubleshooting</h4>
-        <ul className='pl-5 list-disc'>
+        <h4 className="font-semibold text-gray-D1200">Troubleshooting</h4>
+        <ul className="pl-5 list-disc">
           <li>
             Make sure the API server is running (default:{' '}
             <code>http://localhost:3001</code>)

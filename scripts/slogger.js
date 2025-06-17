@@ -219,9 +219,10 @@ export const SLOG_TYPES = {
  */
 const setupIndexes = async (session) => {
   const indexes = [
-    'CREATE INDEX delivery_id IF NOT EXISTS FOR (d:Delivery) ON (d.crankNum)',
-    'CREATE INDEX delivery_time IF NOT EXISTS FOR (d:Delivery) ON (d.timestamp)',
-    'CREATE INDEX object_ref IF NOT EXISTS FOR (o:Object) ON (o.kref)',
+    'CREATE INDEX message_result IF NOT EXISTS FOR (message:Message) ON (message.result)',
+    'CREATE INDEX notify_kpid IF NOT EXISTS FOR (notify:Notify) ON (notify.kpid)',
+    'CREATE INDEX resolve_result IF NOT EXISTS FOR (resolve:Resolve) ON (resolve.result)',
+    'CREATE INDEX syscall_result IF NOT EXISTS FOR (syscall:Syscall) ON (syscall.result)',
   ];
 
   for (const index of indexes) await session.run(index);
@@ -285,10 +286,10 @@ export const makeSlogSender = async (options) => {
 
   /** @type {Slog['blockHeight']} */
   let currentBlockHeight = 0;
+  /** @type {Slog['time']} */
+  let lastBlockTime = 0;
   let promiseChain = Promise.resolve();
   const session = createNewSession();
-  const trackedPromises =
-    /** @type {{ [key: string]: Partial<{ created: Slog['time']; creator: Slog['vatID']; kpid: Message['result']; resolved: Slog['time']; resolver: Slog['vatID']; state: string; }> }} */ ({});
 
   const callBacks = {
     [SLOG_TYPES.COSMIC_SWINGSET.BEGIN_BLOCK]:
@@ -299,7 +300,12 @@ export const makeSlogSender = async (options) => {
         currentBlockHeight = blockHeight;
         addPromisesToChain(async () => {
           await session.run(
-            'MERGE (b:Block {height: $height}) SET b.time = $time, b.blockTime = $blockTime',
+            `MERGE (
+                block:Block {
+                  height: $height
+                }
+              )
+             SET block.time = $time, block.blockTime = $blockTime`,
             prepareParams({ blockTime, height: blockHeight, time }),
           );
         });
@@ -311,7 +317,12 @@ export const makeSlogSender = async (options) => {
       ({ name, time, vatID }) =>
         addPromisesToChain(async () => {
           await session.run(
-            'MERGE (v:Vat {vatID: $vatID}) SET v.name = $name, v.createdAt = $time',
+            `MERGE (
+                vat:Vat {
+                  vatID: $vatID
+                }
+              )
+             SET vat.name = $name, vat.createdAt = $time`,
             prepareParams({ name, time, vatID }),
           );
         }),
@@ -319,149 +330,198 @@ export const makeSlogSender = async (options) => {
       /**
        * @param {Slog} slog
        */
-      ({ crankNum, kd, time, vatID }) => {
-        if (!kd) return;
+      (slog) => {
+        const { crankNum, deliveryNum, kd, time, type, vatID } = slog;
 
+        if (!kd) return;
         const [deliveryType] = kd;
 
-        if (deliveryType === 'message') {
-          const [, ...rest] = kd;
-          const [target, { methargs, result }] = rest;
+        switch (deliveryType) {
+          case 'message': {
+            const [, ...rest] = kd;
+            const [target, { methargs, result }] = rest;
 
-          let method = 'unknown';
-          let methodArguments = 'unknown';
-          try {
-            const { methargs: args } = extractSmallcaps(methargs);
-            [method, methodArguments] = args;
-          } catch (error) {
-            console.warn('Failed to extract method name:', error);
-          }
+            let method = 'unknown';
+            let methodArguments = 'unknown';
+            try {
+              const { methargs: args } = extractSmallcaps(methargs);
+              [method, methodArguments] = args;
+            } catch (error) {
+              console.warn('Failed to extract method name:', error);
+            }
 
-          addPromisesToChain(async () => {
-            await session.run(
-              `CREATE (m:Message {method: $method, methargs: $methargs, time: $time, crankNum: $crankNum, target: $target, result: $result, blockHeight: $blockHeight})
-               WITH m
-               MATCH (v:Vat {vatID: $vatID})
-               CREATE (m)-[:CALL{object: $target, method: $method, call: $call }]->(v)`,
-              prepareParams({
-                blockHeight: currentBlockHeight,
-                call: `${target}->${method}()`,
-                crankNum: toNeoProp(crankNum),
-                methargs: toNeoProp(methodArguments || 'unknown'),
-                method,
-                result,
-                target,
-                time,
-                vatID,
-              }),
-            );
-          });
-
-          if (result)
-            trackedPromises[result] = {
-              created: time,
-              creator: vatID,
-              kpid: result,
-              resolver: 'unknown',
-              state: 'pending',
-            };
-        } else if (deliveryType === 'notify') {
-          const [, resolutions] = kd;
-          for (const [kpid, { state = 'unknown' }] of resolutions) {
             addPromisesToChain(async () => {
               await session.run(
-                `CREATE (n:Notify {method: $method, time: $time, kpid: $kpid, blockHeight: $blockHeight})
-                 WITH n
-                 MATCH (v:Vat {vatID: $vatID})
-                 MATCH (m:Message {result: $kpid})
-                 CREATE (v)-[:CALLED_BY{object: $kpid}]->(m)
-                 CREATE (n)-[:CALL{object: $kpid, method: $method, call: $call }]->(v)`,
+                `CREATE (
+                    message:Message {
+                      argSize: $argSize,
+                      blockHeight: $blockHeight,
+                      crankNum: $crankNum,
+                      deliveryNum: $deliveryNum,
+                      elapsed: $elapsed,
+                      methargs: $methargs,
+                      method: $method,
+                      result: $result,
+                      target: $target,
+                      time: $time,
+                      type: $type
+                    }
+                  )
+                 WITH message
+                 MATCH (vat:Vat {vatID: $vatID})
+                 CREATE (message)-[
+                    :CALL
+                  ]->(vat)`,
                 prepareParams({
-                  blockHeight: currentBlockHeight || null,
-                  call: `${kpid}->${state}()`,
-                  kpid,
-                  method: state,
+                  argSize: methargs.body.length,
+                  blockHeight: currentBlockHeight,
+                  crankNum,
+                  deliveryNum,
+                  elapsed: time - lastBlockTime,
+                  methargs: methodArguments || 'unknown',
+                  method,
+                  result,
+                  target,
                   time,
+                  type,
                   vatID,
                 }),
               );
             });
 
-            if (kpid in trackedPromises) {
-              const promise = trackedPromises[kpid];
+            break;
+          }
+          case 'notify': {
+            const [, resolutions] = kd;
+            for (const [kpid, { state = 'unknown' }] of resolutions) {
               addPromisesToChain(async () => {
                 await session.run(
-                  `MATCH (c:Vat {vatID: $creator})
-                   MATCH (n:Notify {kpid: $kpid})
-                   CREATE (n)-[:CALLED_BY]->(c)`,
+                  `CREATE (
+                      notify:Notify {
+                        blockHeight: $blockHeight,
+                        elapsed: $elapsed,
+                        kpid: $kpid,
+                        method: $state,
+                        time: $time,
+                        type: $type
+                      }
+                    )
+                   WITH notify
+                   MATCH (vat:Vat {vatID: $vatID})
+                   CREATE (notify)-[
+                      :CALL
+                    ]->(vat)`,
                   prepareParams({
-                    creator: promise.creator,
+                    blockHeight: currentBlockHeight,
+                    elapsed: time - lastBlockTime,
                     kpid,
-                    resolver: vatID,
+                    state,
+                    time,
+                    type,
+                    vatID,
                   }),
                 );
               });
-              delete trackedPromises[kpid];
             }
+
+            break;
           }
+          default:
+            break;
         }
       },
     [SLOG_TYPES.SYSCALL]:
       /**
        * @param {Slog} slog
        */
-      ({ ksc, time, vatID }) => {
+      (slog) => {
+        const { ksc, time, type, vatID } = slog;
+
         if (!ksc) return;
         const [kernelSyscallType] = ksc;
 
-        if (kernelSyscallType === 'send') {
-          const [, target, { methargs, result }] = ksc;
-
-          let method = 'unknown';
-          let methodArguments = 'unknown';
-          try {
-            const { methargs: args } = extractSmallcaps(methargs);
-            [method, methodArguments] = args;
-          } catch (error) {
-            console.warn('Failed to extract method name:', error);
+        switch (kernelSyscallType) {
+          case 'resolve': {
+            const [_, __, parts] = ksc;
+            for (const [kp] of parts) {
+              addPromisesToChain(async () => {
+                await session.run(
+                  `CREATE (
+                      resolve:Resolve {
+                        blockHeight: $blockHeight,
+                        elapsed: $elapsed,
+                        result: $result,
+                        time: $time,
+                        type: $type
+                      }
+                    )
+                   WITH resolve
+                   MATCH (vat:Vat {vatID: $vatID})
+                   CREATE (vat)-[
+                      :RESOLVE
+                    ]->(resolve)`,
+                  prepareParams({
+                    blockHeight: currentBlockHeight,
+                    elapsed: time - lastBlockTime,
+                    result: kp,
+                    time,
+                    type,
+                    vatID,
+                  }),
+                );
+              });
+            }
+            break;
           }
+          case 'send': {
+            const [, target, { methargs, result }] = ksc;
 
-          addPromisesToChain(async () => {
-            await session.run(
-              `CREATE (s:Syscall {method: $method, methargs: $methargs, time: $time, result: $result, target: $target, rejected: $rejected})
-               WITH s
-               MATCH (v:Vat {vatID: $vatID})
-               CREATE (s)-[:SYSCALL_FROM]->(v)`,
-              prepareParams({
-                method,
-                methargs: methodArguments,
-                result,
-                time,
-                vatID,
-                target,
-                rejected: 'false',
-              }),
-            );
-          });
+            let method = 'unknown';
+            let methodArguments = 'unknown';
+            try {
+              const { methargs: args } = extractSmallcaps(methargs);
+              [method, methodArguments] = args;
+            } catch (error) {
+              console.warn('Failed to extract method name:', error);
+            }
 
-          if (result) {
-            const promise = {
-              created: time,
-              creator: vatID,
-              kpid: result,
-              resolver: 'unknown',
-              state: 'pending',
-            };
-            trackedPromises[result] = promise;
             addPromisesToChain(async () => {
               await session.run(
-                `MATCH (c:Vat {vatID: $creator})
-                 MATCH (n:Notify {kpid: $kpid})
-                 CREATE (n)-[:CALLED_BY]->(c)`,
-                prepareParams(promise),
+                `CREATE (
+                    syscall:Syscall {
+                      blockHeight: $blockHeight,
+                      elapsed: $elapsed,
+                      methargs: $methargs,
+                      method: $method,
+                      result: $result,
+                      target: $target,
+                      time: $time,
+                      type: $type
+                    }
+                  )
+                 WITH syscall
+                 MATCH (vat:Vat {vatID: $vatID})
+                 CREATE (vat)-[
+                    :SYSCALL
+                 ]->(syscall)`,
+                prepareParams({
+                  blockHeight: currentBlockHeight,
+                  elapsed: time - lastBlockTime,
+                  methargs: methodArguments,
+                  method,
+                  result,
+                  target,
+                  time,
+                  type,
+                  vatID,
+                }),
               );
             });
+
+            break;
           }
+          default:
+            break;
         }
       },
   };
@@ -469,7 +529,10 @@ export const makeSlogSender = async (options) => {
   /**
    * @param {Slog} slog
    */
-  const slogSender = (slog) => callBacks[slog.type]?.(slog);
+  const slogSender = (slog) => {
+    if (!lastBlockTime) lastBlockTime = slog.time;
+    return callBacks[slog.type]?.(slog);
+  };
 
   return Object.assign(slogSender, {
     forceFlush: () => promiseChain,

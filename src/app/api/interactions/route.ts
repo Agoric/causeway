@@ -27,26 +27,44 @@ export const GET = async (request: NextRequest) => {
         .join(' AND ');
 
     const messageQuery = `
-      MATCH (message:Message)-[call:CALL]->(target:Vat), (caller:Vat)-[:CALLED_BY]->(message)
-      WHERE ${createFilters('message')}
-      RETURN caller.vatID  AS sourceVat,
+      MATCH
+        (message:Message)-[call:CALL]->(target:Vat),
+        (source:Vat)-[:SYSCALL]->(syscall:Syscall)
+      WHERE
+        message.result = syscall.result AND ${createFilters('message')}
+      RETURN
+        message.argSize     AS argSize,
+        message.blockHeight AS blockHeight,
+        message.crankNum    AS crankNum,
+        message.elapsed     AS elapsed,
         message.method      AS method,
         message.result      AS promiseId,
+        message.target      AS targetId,
         message.time        AS time,
-        'message'     AS type,
-        target.vatID  AS targetVat
+        'message'           AS type,
+        source.vatID        AS sourceVat,
+        target.vatID        AS targetVat
       ORDER BY message.time
     `;
 
     const notifyQuery = `
-      MATCH (notify:Notify)-[:CALLED_BY]->(caller:Vat), (notify)-[:CALL]->(target:Vat)
-      WHERE ${createFilters('notify')}
-      RETURN caller.vatID  AS sourceVat,
-        notify.kpid        AS promiseId,
-        notify.method      AS method,
-        notify.time        AS time,
-        'notify'      AS type,
-        target.vatID  AS targetVat
+      MATCH
+        (notify:Notify)-[:CALL]->(target:Vat),
+        (source:Vat)-[:RESOLVE]->(resolve:Resolve)
+      WHERE
+        notify.kpid = resolve.result AND ${createFilters('notify')}
+      RETURN
+        0                   AS argSize,
+        notify.blockHeight  AS blockHeight,
+        0                   AS crankNum,
+        notify.elapsed      AS elapsed,
+        notify.method       AS method,
+        0                   AS promiseId,
+        notify.kpid         AS targetId,
+        notify.time         AS time,
+        'notify'            AS type,
+        source.vatID        AS sourceVat,
+        target.vatID        AS targetVat
       ORDER BY notify.time;
     `;
 
@@ -62,9 +80,14 @@ export const GET = async (request: NextRequest) => {
     });
 
     const format = (record: Record<Interaction>) => ({
+      argSize: record.get('argSize'),
+      blockHeight: record.get('blockHeight'),
+      crankNum: record.get('crankNum'),
+      elapsed: record.get('elapsed'),
       method: record.get('method'),
       promiseId: record.get('promiseId'),
       sourceVat: record.get('sourceVat'),
+      targetId: record.get('targetId'),
       targetVat: record.get('targetVat'),
       time: record.get('time'),
       type: record.get('type'),

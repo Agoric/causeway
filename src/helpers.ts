@@ -4,7 +4,114 @@ import { RefObject } from 'react';
 import { Interaction } from 'types/common';
 import { Vat } from 'types/create-vat';
 
-const addParticipantTooltips = (svg: SVGSVGElement) => {
+const LINE_NUMBER_ATTRIBUTE_NAME = 'messagelinenumber';
+const MESSAGE_NUMBER_ATTRIBUTE_NAME = 'messagenumber';
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+const addParticipantTooltips = (
+  currentPage: number,
+  interactions: Array<Interaction>,
+  interactionsPerPage: number,
+  svg: SVGSVGElement,
+) => {
+  const messageTooltipMap: { [key: string]: SVGGElement } = {};
+  svg
+    .querySelectorAll<SVGTextElement>('text[class="messageText"]')
+    .forEach((textElement) => {
+      textElement.style.removeProperty('font-size');
+      textElement.classList.add('text-xs');
+    });
+
+  svg
+    .querySelectorAll<SVGLineElement>(`[${LINE_NUMBER_ATTRIBUTE_NAME}]`)
+    .forEach((lineElement) => {
+      const defaultOpacity = '0';
+      const messageNumber = lineElement.getAttribute(
+        LINE_NUMBER_ATTRIBUTE_NAME,
+      )!;
+
+      const interaction =
+        interactions[
+          currentPage * interactionsPerPage + Number(messageNumber) - 1
+        ];
+      if (!interaction.crankNum) return;
+
+      const horizontalPadding = 6;
+      const verticalPadding = 3;
+      const x =
+        Math.max(
+          Number(lineElement.getAttribute('x1')),
+          Number(lineElement.getAttribute('x2')),
+        ) + 16;
+      const y = Number(lineElement.getAttribute('y1'));
+
+      const group = document.createElementNS(SVG_NS, 'g');
+      group.setAttribute('tooltipLineNumber', messageNumber);
+      group.style.opacity = defaultOpacity;
+
+      const toolTip = document.createElementNS(SVG_NS, 'text');
+      toolTip.classList.add(...'font-mono text-gray-L900 text-xs'.split(' '));
+      toolTip.setAttribute('tooltipLineNumber', messageNumber);
+      toolTip.setAttribute('x', String(x));
+      toolTip.setAttribute('y', String(y));
+      toolTip.textContent = `${interaction.crankNum}@${interaction.targetVat}`;
+
+      group.appendChild(toolTip);
+      lineElement.parentElement?.appendChild(group);
+
+      const bbox = toolTip.getBBox();
+
+      const backgroundProvider = document.createElementNS(SVG_NS, 'rect');
+      backgroundProvider.setAttribute(
+        'height',
+        String(bbox.height + verticalPadding * 2),
+      );
+      backgroundProvider.setAttribute('rx', '2');
+      backgroundProvider.setAttribute('ry', '2');
+      backgroundProvider.setAttribute(
+        'width',
+        String(bbox.width + horizontalPadding * 2),
+      );
+      backgroundProvider.setAttribute('x', String(bbox.x - horizontalPadding));
+      backgroundProvider.setAttribute('y', String(bbox.y - verticalPadding));
+      backgroundProvider.classList.add(
+        ...'fill-yellow-100 stroke-gray-L200'.split(' '),
+      );
+
+      group.insertBefore(backgroundProvider, toolTip);
+
+      lineElement.addEventListener(
+        'mouseenter',
+        () => (group.style.opacity = '1'),
+      );
+      lineElement.addEventListener(
+        'mouseleave',
+        () => (group.style.opacity = defaultOpacity),
+      );
+
+      messageTooltipMap[messageNumber] = group;
+    });
+
+  svg
+    .querySelectorAll<SVGTextElement>(`[${MESSAGE_NUMBER_ATTRIBUTE_NAME}]`)
+    .forEach((textElement) => {
+      const messageNumber = textElement.getAttribute(
+        MESSAGE_NUMBER_ATTRIBUTE_NAME,
+      )!;
+
+      const toolTip = messageTooltipMap[messageNumber];
+      if (!toolTip) return;
+
+      textElement.addEventListener(
+        'mouseenter',
+        () => (toolTip.style.opacity = '1'),
+      );
+      textElement.addEventListener(
+        'mouseleave',
+        () => (toolTip.style.opacity = '0'),
+      );
+    });
+
   const actorRects = svg.querySelectorAll('rect.actor, .labelBox');
   const actorLabels = svg.querySelectorAll('.actor, .labelText');
 
@@ -14,20 +121,16 @@ const addParticipantTooltips = (svg: SVGSVGElement) => {
       const displayedName = textLabel.textContent.trim();
       let tooltipText;
 
-      if (displayedName.includes('System')) {
+      if (displayedName.includes('System'))
         tooltipText = 'System: The Neo4j system participant';
-      } else {
+      else {
         let vatName = displayedName;
-        if (displayedName.endsWith('...')) {
+        if (displayedName.endsWith('...'))
           vatName = displayedName.replace('...', '');
-        }
         tooltipText = `Vat: ${vatName}\nClick to focus on this vat's interactions`;
       }
 
-      const title = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'title',
-      );
+      const title = document.createElementNS(SVG_NS, 'title');
       title.textContent = tooltipText;
       rect.appendChild(title);
 
@@ -40,21 +143,17 @@ const addParticipantTooltips = (svg: SVGSVGElement) => {
       const displayedName = label.textContent.trim();
       let tooltipText;
 
-      if (displayedName.includes('System')) {
+      if (displayedName.includes('System'))
         tooltipText = 'System: The Neo4j system participant';
-      } else {
+      else {
         let vatName = displayedName;
 
-        if (displayedName.endsWith('...')) {
+        if (displayedName.endsWith('...'))
           vatName = displayedName.replace('...', '');
-        }
         tooltipText = `Vat: ${vatName}`;
       }
 
-      const title = document.createElementNS(
-        'http://www.w3.org/2000/svg',
-        'title',
-      );
+      const title = document.createElementNS(SVG_NS, 'title');
       title.textContent = tooltipText;
       label.appendChild(title);
       label.classList.add('has-tooltip');
@@ -131,7 +230,18 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
   });
 
   interactions.forEach((interaction, index) => {
-    const { method, promiseId, sourceVat, targetVat, time, type } = interaction;
+    const {
+      argSize,
+      blockHeight,
+      elapsed,
+      method,
+      promiseId,
+      sourceVat,
+      targetId,
+      targetVat,
+      time,
+      type,
+    } = interaction;
 
     if (!sourceVat || !targetVat) return;
 
@@ -183,14 +293,15 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
 
       methodDisplay = methodDisplay.replace(/[^\w\s\-.,;:()]/g, '_');
       result += [
-        '    ',
         safeSourceVat,
         arrow,
         safeTargetVat,
-        ': ',
+        `: ${blockHeight} ${Math.round(elapsed * 1000) / 1000} `,
+        promiseId && `${promiseId} <-`,
+        targetId,
+        '.',
         methodDisplay,
-        '()',
-        promiseId && ` [${promiseId}]`,
+        `(${argSize || ''})`,
         '\n',
       ]
         .filter(Boolean)
@@ -214,6 +325,10 @@ const generateInteractions = (interactions: Interaction[], vats: Vat[]) => {
 };
 
 const getMermaidId = (vatId: string) => `Vat_${vatId.replace(/[^\w]/g, '_')}`;
+
+export const getSanitizedInteractionsPerPage = (
+  interactionsPerPage: string | null,
+) => Math.max(5, Math.min(50, Number(interactionsPerPage) || 20));
 
 export const generateMermaidSequenceDiagram = (
   interactions: Interaction[],
@@ -298,9 +413,7 @@ const generateParticipants = (
     result += `    participant ${mermaidId} as ${displayName}\n`;
   }
 
-  if (hasSystemMessages) {
-    result += '    participant System as "System"\n';
-  }
+  if (hasSystemMessages) result += '    participant System as "System"\n';
 
   return result;
 };
@@ -325,15 +438,19 @@ export const parseTimestamp = (timestampStr: string | null) => {
 };
 
 type RenderDiagramArgs = {
+  currentPage: number;
+  interactions: Array<Interaction>;
+  interactionsPerPage: number;
   mermaidRef: RefObject<HTMLDivElement | null>;
   pages: string[];
-  currentPage: number;
 };
 
 export const renderDiagram = async ({
+  currentPage,
+  interactions,
+  interactionsPerPage,
   mermaidRef,
   pages,
-  currentPage,
 }: RenderDiagramArgs) => {
   if (!(pages.length && mermaidRef.current)) return;
 
@@ -349,13 +466,15 @@ export const renderDiagram = async ({
 
     if (svgElement) {
       svgElement.classList.add('flex-shrink-0', '!max-w-none');
-      const textElements = svgElement.querySelectorAll('text');
-      textElements.forEach((text) => {
-        const currentSize = parseFloat(text.getAttribute('font-size') || '12');
-        text.setAttribute('font-size', `${currentSize * 1.2}`);
-      });
+      svgElement.style.minWidth = svgElement.style.maxWidth;
+
       fixAlignments(svgElement);
-      addParticipantTooltips(svgElement);
+      addParticipantTooltips(
+        currentPage,
+        interactions,
+        interactionsPerPage,
+        svgElement,
+      );
     }
   } catch (error) {
     console.error('Mermaid rendering error:', error);
