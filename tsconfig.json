@@ -7,19 +7,13 @@
     "incremental": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "module": "esnext",
     "moduleResolution": "node",
     "noEmit": true,
     "noImplicitAny": true,
     "paths": {
-      "~/*": [
-        "../*"
-      ]
+      "~/*": ["../*"]
     },
     "plugins": [
       {
@@ -32,14 +26,13 @@
     "strictNullChecks": true,
     "target": "ES2017"
   },
-  "exclude": [
-    "node_modules"
-  ],
+  "exclude": ["node_modules"],
   "include": [
+    ".next/types/**/*.ts",
+    "interface.d.ts",
     "lib",
     "next-env.d.ts",
     "scripts",
-    "src",
-    ".next/types/**/*.ts"
+    "src"
   ]
 }

@@ -4,12 +4,14 @@ import { Vat } from 'types/create-vat';
 
 type ContextType = {
   interactions: Array<Interaction>;
-  setData: (interactions: Array<Interaction>, vats: Array<Vat>) => void;
+  runIds: Array<string>;
+  setData: (data: Partial<Omit<ContextType, 'setData'>>) => void;
   vats: Array<Vat>;
 };
 
 const defaultContextValue: ContextType = {
   interactions: [],
+  runIds: [],
   setData: () => {},
   vats: [],
 };
@@ -24,7 +26,12 @@ const InteractionProvider = ({ children }: { children?: React.ReactNode }) => {
     <Context.Provider
       value={{
         interactions: state.interactions,
-        setData: (interactions, vats) => setState({ interactions, vats }),
+        runIds: state.runIds,
+        setData: (data) =>
+          setState((prevState) => ({
+            ...prevState,
+            ...data,
+          })),
         vats: state.vats,
       }}
     >

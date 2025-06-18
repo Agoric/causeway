@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
-import { makeSlogSender, SLOG_TYPES, type Slog } from './slogger';
+import { makeSlogSender, SLOG_TYPES } from './slogger';
 
 const processSlogs = async (
   slogfileName: string,

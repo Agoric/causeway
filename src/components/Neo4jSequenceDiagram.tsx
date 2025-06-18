@@ -3,8 +3,9 @@ import { useContext, useState, useEffect } from 'react';
 import { Context as InteractionContext } from 'context/interactions';
 import {
   checkHealth,
-  getVats,
   getInteractions,
+  getRunIds,
+  getVats,
   sanitizeInteractions,
 } from 'services/api';
 import { getSanitizedInteractionsPerPage, parseTimestamp } from 'helpers';
@@ -19,7 +20,7 @@ const FORM_LABEL_CLASSES = 'font-bold';
 
 const Neo4jSequenceDiagram = () => {
   const now = Date.now() / 1000;
-  const { setData } = useContext(InteractionContext);
+  const { runIds, setData } = useContext(InteractionContext);
   const router = useRouter();
   const searchParams = useSearchParams();
   const [state, setState] = useState<{
@@ -28,6 +29,7 @@ const Neo4jSequenceDiagram = () => {
     endTime: string;
     formDisabled: boolean;
     interactionsPerPage: number;
+    runId: string;
     startTime: string;
     status: string;
   }>({
@@ -36,6 +38,7 @@ const Neo4jSequenceDiagram = () => {
     endTime: '',
     formDisabled: true,
     interactionsPerPage: 20,
+    runId: '',
     startTime: '',
     status: '',
   });
@@ -44,10 +47,12 @@ const Neo4jSequenceDiagram = () => {
   const routerEndTime = searchParams.get('endTime') || '';
   const routerInteractionsPerPage =
     searchParams.get('interactionsPerPage') || '';
+  const routerRunId = searchParams.get('runId') || '';
   const routerStartTime = searchParams.get('startTime') || '';
 
   const fetchData = async () => {
-    if (!(routerBlockHeight || routerStartTime || routerEndTime)) return;
+    if (!(routerBlockHeight || routerEndTime || routerRunId || routerStartTime))
+      return;
 
     setState((prevState) => ({
       ...prevState,
@@ -62,15 +67,22 @@ const Neo4jSequenceDiagram = () => {
       );
       const startTimestamp = parseTimestamp(routerStartTime) ?? 0;
 
-      const [vats, interactionsData] = await Promise.all([
-        getVats({
+      const [interactionsData, runIds, vats] = await Promise.all([
+        getInteractions({
+          blockHeight: Number(routerBlockHeight),
+          endTime: endTimestamp,
+          runId: routerRunId,
+          startTime: startTimestamp,
+        }),
+        getRunIds({
           blockHeight: Number(routerBlockHeight),
           endTime: endTimestamp,
           startTime: startTimestamp,
         }),
-        getInteractions({
+        getVats({
           blockHeight: Number(routerBlockHeight),
           endTime: endTimestamp,
+          runId: routerRunId,
           startTime: startTimestamp,
         }),
       ]);
@@ -78,14 +90,15 @@ const Neo4jSequenceDiagram = () => {
       const allInteractions = interactionsData.interactions;
 
       const processedInteractions = sanitizeInteractions(allInteractions);
-      setData(
-        processedInteractions,
-        vats.sort(
+      setData({
+        interactions: processedInteractions,
+        runIds: runIds.sort(),
+        vats: vats.sort(
           ({ vatID: firstVatID }, { vatID: secondVatID }) =>
             Number(EXTRACT_VAT_ID_REGEX.exec(firstVatID)![1]) -
             Number(EXTRACT_VAT_ID_REGEX.exec(secondVatID)![1]),
         ),
-      );
+      });
 
       const pageCount = Math.ceil(
         processedInteractions.length / interactionsPerPage,
@@ -94,6 +107,7 @@ const Neo4jSequenceDiagram = () => {
 
       setState((prevState) => ({
         ...prevState,
+        runId: runIds.includes(prevState.runId) ? prevState.runId : '',
         status: `Diagram generated successfully with ${processedInteractions.length} interactions between ${vats.length} vats.${pagesInfo}`,
       }));
     } catch (error) {
@@ -122,6 +136,7 @@ const Neo4jSequenceDiagram = () => {
       interactionsPerPage: getSanitizedInteractionsPerPage(
         routerInteractionsPerPage,
       ),
+      runId: routerRunId,
       startTime:
         routerStartTime || String((currentTimestamp - 10 * 1000) / 1000),
     }));
@@ -131,6 +146,7 @@ const Neo4jSequenceDiagram = () => {
     routerBlockHeight,
     routerEndTime,
     routerInteractionsPerPage,
+    routerRunId,
     routerStartTime,
     state.connectionHealthy,
   ]);
@@ -235,11 +251,45 @@ const Neo4jSequenceDiagram = () => {
         </span>
       </div>
 
+      <div className={FORM_GROUP_CLASSES}>
+        <p className={FORM_LABEL_CLASSES}>Run ID:</p>
+        <select
+          onChange={({ target: { value: runId } }) =>
+            setState((prevState) => ({
+              ...prevState,
+              runId,
+            }))
+          }
+          value={state.runId}
+        >
+          <option value="" />
+          {runIds.map((runId) => (
+            <option key={runId} value={runId}>
+              {runId}
+            </option>
+          ))}
+        </select>
+        <span className={FORM_HELP_CLASSES}>Run ID to show data for</span>
+      </div>
+
       <button
         className="base-button"
         onClick={() =>
           router.push(
-            `/?blockHeight=${state.blockHeight}&currentPage=1&endTime=${state.endTime}&interactionsPerPage=${state.interactionsPerPage}&startTime=${state.startTime}`,
+            '/?' +
+              [
+                !isNaN(Number(state.blockHeight)) &&
+                  `blockHeight=${state.blockHeight}`,
+                'currentPage=1',
+                state.endTime && `endTime=${state.endTime}`,
+                state.interactionsPerPage &&
+                  `interactionsPerPage=${state.interactionsPerPage}`,
+                state.runId && `runId=${state.runId}`,
+                !isNaN(Number(state.startTime)) &&
+                  `startTime=${state.startTime}`,
+              ]
+                .filter(Boolean)
+                .join('&'),
           )
         }
         disabled={state.formDisabled}

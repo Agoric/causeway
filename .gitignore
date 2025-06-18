@@ -29,4 +29,5 @@ Thumbs.db
 a3p.slog
 
 # neo4j files
-neo4j/
+scripts/neo4j
+scripts/slog-context.json

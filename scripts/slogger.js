@@ -1,165 +1,12 @@
+import { readFileSync, writeFileSync } from 'fs';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { auth, driver as createDriver, int as neoInt } from 'neo4j-driver';
+import { makeContextualSlogProcessor } from '@agoric/telemetry/src/context-aware-slog.js';
 
-/**
- * @typedef { [tag: 'bringOutYourDead']} KernelDeliveryBringOutYourDead
- *
- * @typedef { [tag: 'changeVatOptions', options: Record<string, unknown> ]} KernelDeliveryChangeVatOptions
- *
- * @typedef { [tag: 'dropExports', krefs: string[] ]} KernelDeliveryDropExports
- *
- * @typedef { [tag: 'message', target: string, msg: Message]} KernelDeliveryMessage
- *
- * @typedef { [tag: 'notify', resolutions: KernelDeliveryOneNotify[] ]} KernelDeliveryNotify
- *
- * @typedef { KernelDeliveryMessage
- *  | KernelDeliveryNotify
- *  | KernelDeliveryDropExports
- *  | KernelDeliveryRetireExports
- *  | KernelDeliveryRetireImports
- *  | KernelDeliveryChangeVatOptions
- *  | KernelDeliveryStartVat
- *  | KernelDeliveryStopVat
- *  | KernelDeliveryBringOutYourDead
- * } KernelDeliveryObject
- *
- * @typedef { [kpid: string, rejected: boolean, data: SwingSetCapData]} KernelOneResolution
- *
- * @typedef { [tag: 'abandonExports', vatID: string, krefs: string[] ]} KernelSyscallAbandonExports
- *
- * @typedef { [tag: 'callKernelHook', hookName: string, args: SwingSetCapData]} KernelSyscallCallKernelHook
- *
- * @typedef { [tag: 'dropImports', krefs: string[] ]} KernelSyscallDropImports
- *
- * @typedef { [tag: 'exit', vatID: string, isFailure: boolean, info: SwingSetCapData ]} KernelSyscallExit
- *
- * @typedef { [tag: 'invoke', target: string, method: string, args: SwingSetCapData]} KernelSyscallInvoke
- *
- * @typedef { [tag: 'resolve', vatID: string, resolutions: KernelOneResolution[] ]} KernelSyscallResolve
- *
- * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelSyscallRetireExports
- *
- * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelSyscallRetireImports
- *
- * @typedef { [tag: 'send', target: string, msg: Message] } KernelSyscallSend
- *
- * @typedef { [tag: 'subscribe', vatID: string, kpid: string ]} KernelSyscallSubscribe
- *
- * @typedef { [tag: 'vatstoreDelete', vatID: string, key: string ]} KernelSyscallVatstoreDelete
- *
- * @typedef { [tag: 'vatstoreGet', vatID: string, key: string ]} KernelSyscallVatstoreGet
- *
- * @typedef { [tag: 'vatstoreGetNextKey', vatID: string, priorKey: string ]} KernelSyscallVatstoreGetNextKey
- *
- * @typedef { [tag: 'vatstoreSet', vatID: string, key: string, data: string ]} KernelSyscallVatstoreSet
- *
- * @typedef { KernelSyscallAbandonExports
- *  | KernelSyscallCallKernelHook
- *  | KernelSyscallDropImports
- *  | KernelSyscallExit
- *  | KernelSyscallInvoke
- *  | KernelSyscallResolve
- *  | KernelSyscallRetireExports
- *  | KernelSyscallRetireImports
- *  | KernelSyscallSend
- *  | KernelSyscallSubscribe
- *  | KernelSyscallVatstoreDelete
- *  | KernelSyscallVatstoreGet
- *  | KernelSyscallVatstoreGetNextKey
- *  | KernelSyscallVatstoreSet
- * } KernelSyscallObject
- *
- * @typedef { [kpid: string, kp: { state: string, data: SwingSetCapData }] } KernelDeliveryOneNotify
- *
- * @typedef { [tag: 'retireExports', krefs: string[] ]} KernelDeliveryRetireExports
- *
- * @typedef { [tag: 'retireImports', krefs: string[] ]} KernelDeliveryRetireImports
- *
- * @typedef { [tag: 'startVat', vatParameters: SwingSetCapData ]} KernelDeliveryStartVat
- *
- * @typedef { [tag: 'stopVat', disconnectObject: SwingSetCapData ]} KernelDeliveryStopVat
- *
- * @typedef {object} MakeSlogSenderCommonOptions
- * @property {typeof process.env} env
- * @property {string} [stateDir]
- * @property {string} [serviceName]
- *
- * @typedef {MakeSlogSenderCommonOptions & Record<string, unknown>} MakeSlogSenderOptions
- *
- * @typedef {{ methargs: SwingSetCapData; result: string | undefined | null }} Message
- *
- * @typedef {{
- *  blockHeight?: number;
- *  blockTime?: number;
- *  crankNum?: bigint;
- *  crankType?: string;
- *  deliveryNum?: bigint;
- *  inboundNum?: string;
- *  kd?: KernelDeliveryObject;
- *  ksc?: KernelSyscallObject;
- *  monotime: number;
- *  name?: string;
- *  remainingBeans?: bigint;
- *  replay?: boolean;
- *  runNum?: number;
- *  sender?: string;
- *  source?: string;
- *  endoZipBase64Sha512?: string;
- *  syscall?: VatSyscallObject[0];
- *  syscallNum?: number;
- *  time: number;
- *  type: string;
- *  vatID?: string;
- *  vsc?: VatSyscallObject;
- * }} Slog
- *
- * @typedef {object} SwingSetCapData
- * @property {string} body
- * @property {Array<string>} slots
- *
- * @typedef { [vpid: string, isReject: boolean, data: SwingSetCapData ] } VatOneResolution
- *
- * @typedef { [tag: 'abandonExports', slots: string[] ]} VatSyscallAbandonExports
- *
- * @typedef { [tag: 'callNow', target: string, method: string, args: SwingSetCapData]} VatSyscallCallNow
- *
- * @typedef { [tag: 'dropImports', slots: string[] ]} VatSyscallDropImports
- *
- * @typedef { [tag: 'exit', isFailure: boolean, info: SwingSetCapData ]} VatSyscallExit
- *
- * @typedef { [tag: 'resolve', resolutions: VatOneResolution[] ]} VatSyscallResolve
- *
- * @typedef { [tag: 'retireExports', slots: string[] ]} VatSyscallRetireExports
- *
- * @typedef { [tag: 'retireImports', slots: string[] ]} VatSyscallRetireImports
- *
- * @typedef { [tag: 'send', target: string, msg: Message] } VatSyscallSend
- *
- * @typedef { [tag: 'subscribe', vpid: string ]} VatSyscallSubscribe
- *
- * @typedef { [tag: 'vatstoreDelete', key: string ]} VatSyscallVatstoreDelete
- *
- * @typedef { [tag: 'vatstoreGet', key: string ]} VatSyscallVatstoreGet
- *
- * @typedef { [tag: 'vatstoreGetNextKey', priorKey: string ]} VatSyscallVatstoreGetNextKey
- *
- * @typedef { [tag: 'vatstoreSet', key: string, data: string ]} VatSyscallVatstoreSet
- *
- * @typedef { VatSyscallAbandonExports
- *  | VatSyscallCallNow
- *  | VatSyscallDropImports
- *  | VatSyscallExit
- *  | VatSyscallResolve
- *  | VatSyscallRetireExports
- *  | VatSyscallRetireImports
- *  | VatSyscallSend
- *  | VatSyscallSubscribe
- *  | VatSyscallVatstoreDelete
- *  | VatSyscallVatstoreGet
- *  | VatSyscallVatstoreGetNextKey
- *  | VatSyscallVatstoreSet
- * } VatSyscallObject
- */
-
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const DEFAULT_CONTEXT_FILE = 'slog-context.json';
+const FILE_ENCODING = 'utf8';
 export const SLOG_TYPES = {
   CLIST: 'clist',
   CONSOLE: 'console',
@@ -214,13 +61,62 @@ export const SLOG_TYPES = {
   SYSCALL_RESULT: 'syscall-result',
 };
 
+// @ts-ignore
+if (!globalThis.assert)
+  // @ts-ignore
+  globalThis.assert = (val) => {
+    if (!val) throw Error(`value ${val} is not truthy`);
+  };
+
+/**
+ * @param {string} filePath
+ */
+const getContextFilePersistenceUtils = (filePath) => {
+  console.warn(`Using file ${filePath} for slogger context`);
+
+  return {
+    /**
+     * @param {Context} context
+     */
+    persistContext: (context) => {
+      try {
+        writeFileSync(filePath, serializeSlogObj(context), FILE_ENCODING);
+      } catch (err) {
+        console.error('Error writing context to file: ', err);
+      }
+    },
+
+    /**
+     * @returns {Context | null}
+     */
+    restoreContext: () => {
+      try {
+        return JSON.parse(readFileSync(filePath, FILE_ENCODING));
+      } catch (parseErr) {
+        console.error('Error reading context from file: ', parseErr);
+        return null;
+      }
+    },
+  };
+};
+
+/**
+ * @param {Context} slogObj
+ */
+const serializeSlogObj = (slogObj) =>
+  JSON.stringify(slogObj, (_, value) =>
+    typeof value === BigInt.name.toLowerCase() ? Number(value) : value,
+  );
+
 /**
  * @param {ReturnType<ReturnType<typeof createDriver>['session']>} session
  */
 const setupIndexes = async (session) => {
   const indexes = [
     'CREATE INDEX message_result IF NOT EXISTS FOR (message:Message) ON (message.result)',
+    'CREATE INDEX message_runId IF NOT EXISTS FOR (message:Message) ON (message.runID)',
     'CREATE INDEX notify_kpid IF NOT EXISTS FOR (notify:Notify) ON (notify.kpid)',
+    'CREATE INDEX notify_runId IF NOT EXISTS FOR (notify:Notify) ON (notify.runID)',
     'CREATE INDEX resolve_result IF NOT EXISTS FOR (resolve:Resolve) ON (resolve.result)',
     'CREATE INDEX syscall_result IF NOT EXISTS FOR (syscall:Syscall) ON (syscall.result)',
   ];
@@ -238,6 +134,10 @@ export const makeSlogSender = async (options) => {
   const NEO4J_USER = options.env.NEO4J_USER || 'neo4j';
 
   const driver = createDriver(NEO4J_URI);
+  const persistenceUtils = getContextFilePersistenceUtils(
+    options.env.SLOG_CONTEXT_FILE_PATH ||
+      `${options.stateDir || __dirname}/${DEFAULT_CONTEXT_FILE}`,
+  );
 
   const createNewSession = () =>
     driver.session({
@@ -282,6 +182,10 @@ export const makeSlogSender = async (options) => {
     else return value;
   };
 
+  const contextualSlogProcessor = makeContextualSlogProcessor(
+    {},
+    persistenceUtils,
+  );
   await setupIndexes(createNewSession());
 
   /** @type {Slog['blockHeight']} */
@@ -294,9 +198,9 @@ export const makeSlogSender = async (options) => {
   const callBacks = {
     [SLOG_TYPES.COSMIC_SWINGSET.BEGIN_BLOCK]:
       /**
-       * @param {Slog} slog
+       * @param {ReturnType<typeof contextualSlogProcessor>} slog
        */
-      ({ blockHeight, blockTime, time }) => {
+      ({ body: { blockHeight, blockTime }, time }) => {
         currentBlockHeight = blockHeight;
         addPromisesToChain(async () => {
           await session.run(
@@ -312,9 +216,9 @@ export const makeSlogSender = async (options) => {
       },
     [SLOG_TYPES.CREATE_VAT]:
       /**
-       * @param {Slog} slog
+       * @param {ReturnType<typeof contextualSlogProcessor>} slog
        */
-      ({ name, time, vatID }) =>
+      ({ body: { name, vatID }, time }) =>
         addPromisesToChain(async () => {
           await session.run(
             `MERGE (
@@ -328,10 +232,12 @@ export const makeSlogSender = async (options) => {
         }),
     [SLOG_TYPES.DELIVER]:
       /**
-       * @param {Slog} slog
+       * @param {ReturnType<typeof contextualSlogProcessor>} slog
        */
-      (slog) => {
-        const { crankNum, deliveryNum, kd, time, type, vatID } = slog;
+      ({ attributes, body, time }) => {
+        const { crankNum, kd, type, vatID } = body;
+        const deliveryNum = body.deliveryNum || attributes['crank.deliveryNum'];
+        const runID = attributes['run.id'] || 'N/A';
 
         if (!kd) return;
         const [deliveryType] = kd;
@@ -362,6 +268,7 @@ export const makeSlogSender = async (options) => {
                       methargs: $methargs,
                       method: $method,
                       result: $result,
+                      runID: $runID,
                       target: $target,
                       time: $time,
                       type: $type
@@ -381,6 +288,7 @@ export const makeSlogSender = async (options) => {
                   methargs: methodArguments || 'unknown',
                   method,
                   result,
+                  runID,
                   target,
                   time,
                   type,
@@ -402,6 +310,7 @@ export const makeSlogSender = async (options) => {
                         elapsed: $elapsed,
                         kpid: $kpid,
                         method: $state,
+                        runID: $runID,
                         time: $time,
                         type: $type
                       }
@@ -415,6 +324,7 @@ export const makeSlogSender = async (options) => {
                     blockHeight: currentBlockHeight,
                     elapsed: time - lastBlockTime,
                     kpid,
+                    runID,
                     state,
                     time,
                     type,
@@ -432,10 +342,11 @@ export const makeSlogSender = async (options) => {
       },
     [SLOG_TYPES.SYSCALL]:
       /**
-       * @param {Slog} slog
+       * @param {ReturnType<typeof contextualSlogProcessor>} slog
        */
-      (slog) => {
-        const { ksc, time, type, vatID } = slog;
+      ({ attributes, body, time }) => {
+        const { ksc, type, vatID } = body;
+        const runID = attributes['run.id'] || 'N/A';
 
         if (!ksc) return;
         const [kernelSyscallType] = ksc;
@@ -451,6 +362,7 @@ export const makeSlogSender = async (options) => {
                         blockHeight: $blockHeight,
                         elapsed: $elapsed,
                         result: $result,
+                        runID: $runID,
                         time: $time,
                         type: $type
                       }
@@ -464,6 +376,7 @@ export const makeSlogSender = async (options) => {
                     blockHeight: currentBlockHeight,
                     elapsed: time - lastBlockTime,
                     result: kp,
+                    runID,
                     time,
                     type,
                     vatID,
@@ -494,6 +407,7 @@ export const makeSlogSender = async (options) => {
                       methargs: $methargs,
                       method: $method,
                       result: $result,
+                      runID: $runID,
                       target: $target,
                       time: $time,
                       type: $type
@@ -510,6 +424,7 @@ export const makeSlogSender = async (options) => {
                   methargs: methodArguments,
                   method,
                   result,
+                  runID,
                   target,
                   time,
                   type,
@@ -531,7 +446,7 @@ export const makeSlogSender = async (options) => {
    */
   const slogSender = (slog) => {
     if (!lastBlockTime) lastBlockTime = slog.time;
-    return callBacks[slog.type]?.(slog);
+    return callBacks[slog.type]?.(contextualSlogProcessor(slog));
   };
 
   return Object.assign(slogSender, {

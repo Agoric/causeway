@@ -8,7 +8,35 @@ export const checkHealth = async () => {
   if (!response.ok) throw new Error('Failed to connect to database');
 };
 
-export const getVats = async ({
+export const getInteractions = async ({
+  blockHeight,
+  endTime,
+  runId,
+  startTime,
+}: Partial<{
+  blockHeight: number;
+  endTime: number;
+  runId: string;
+  startTime: number;
+}>): Promise<Interactions> => {
+  let route = `${API_BASE}/interactions?`;
+  route += [
+    blockHeight && `blockHeight=${blockHeight}`,
+    endTime && `endTime=${endTime}`,
+    runId && `runId=${runId}`,
+    startTime && `startTime=${startTime}`,
+  ]
+    .filter(Boolean)
+    .join('&');
+
+  const response = await fetch(route);
+  if (!response.ok)
+    throw new Error(`Error fetching interactions: ${response.statusText}`);
+
+  return await response.json();
+};
+
+export const getRunIds = async ({
   blockHeight,
   endTime,
   startTime,
@@ -16,8 +44,8 @@ export const getVats = async ({
   blockHeight: number;
   endTime: number;
   startTime: number;
-}>): Promise<Vat[]> => {
-  let route = `${API_BASE}/vats?`;
+}>): Promise<Array<string>> => {
+  let route = `${API_BASE}/run-id?`;
   route += [
     blockHeight && `blockHeight=${blockHeight}`,
     endTime && `endTime=${endTime}`,
@@ -33,19 +61,22 @@ export const getVats = async ({
   return await response.json();
 };
 
-export const getInteractions = async ({
+export const getVats = async ({
   blockHeight,
   endTime,
+  runId,
   startTime,
 }: Partial<{
   blockHeight: number;
   endTime: number;
+  runId: string;
   startTime: number;
-}>): Promise<Interactions> => {
-  let route = `${API_BASE}/interactions?`;
+}>): Promise<Array<Vat>> => {
+  let route = `${API_BASE}/vats?`;
   route += [
     blockHeight && `blockHeight=${blockHeight}`,
     endTime && `endTime=${endTime}`,
+    runId && `runId=${runId}`,
     startTime && `startTime=${startTime}`,
   ]
     .filter(Boolean)
@@ -53,7 +84,7 @@ export const getInteractions = async ({
 
   const response = await fetch(route);
   if (!response.ok)
-    throw new Error(`Error fetching interactions: ${response.statusText}`);
+    throw new Error(`Error fetching vats: ${response.statusText}`);
 
   return await response.json();
 };

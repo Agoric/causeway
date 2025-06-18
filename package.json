@@ -1,9 +1,10 @@
 {
   "dependencies": {
-    "neo4j-driver": "^5.28.1",
-    "next": "^15.3.2",
-    "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "@agoric/telemetry": "patch:@agoric/telemetry@0.6.3-dev-bf2d699.0#~/.yarn/patches/agoric-telemetry.patch",
+    "neo4j-driver": "5.28.1",
+    "next": "15.3.2",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   },
   "devDependencies": {
     "@types/node": "22.15.21",
@@ -11,10 +12,10 @@
     "autoprefixer": "10.4.21",
     "mermaid": "patch:mermaid@10.9.3#~/.yarn/patches/mermaid.patch",
     "postcss": "8.5.3",
-    "prettier": "^3.5.3",
+    "prettier": "3.5.3",
     "tailwindcss": "3.4.4",
     "typescript": "5.8.3",
-    "vite-node": "^3.1.4"
+    "vite-node": "3.1.4"
   },
   "name": "neo4j-diagram-app",
   "packageManager": "yarn@4.9.1",

@@ -25,6 +25,7 @@ export type Interaction = {
   elapsed: number;
   method: string;
   promiseId: string;
+  runId: string;
   sourceVat: string;
   targetVat: string;
   targetId: string;

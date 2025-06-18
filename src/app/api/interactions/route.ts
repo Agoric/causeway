@@ -12,16 +12,19 @@ export const GET = async (request: NextRequest) => {
     const blockHeight = searchParams.get('blockHeight');
     const endTime = searchParams.get('endTime');
     const startTime = searchParams.get('startTime');
+    const runId = searchParams.get('runId');
 
     const startTimestamp = parseFloat(startTime as string) || 0;
     const endTimestamp =
       parseFloat(endTime as string) || Math.floor(Date.now() / 1000);
 
-    const createFilters = (nodeName: string) =>
+    const createFilters = (sourceNodeName: string, targetNodeName: string) =>
       [
-        blockHeight && `${nodeName}.blockHeight = $blockHeight`,
-        endTimestamp && `${nodeName}.time <= $endTime`,
-        startTimestamp && `${nodeName}.time >= $startTime`,
+        blockHeight && `${sourceNodeName}.blockHeight = $blockHeight`,
+        endTimestamp && `${sourceNodeName}.time <= $endTime`,
+        runId && `${sourceNodeName}.runID = ${targetNodeName}.runID`,
+        runId && `${sourceNodeName}.runID = $runId`,
+        startTimestamp && `${sourceNodeName}.time >= $startTime`,
       ]
         .filter(Boolean)
         .join(' AND ');
@@ -31,7 +34,7 @@ export const GET = async (request: NextRequest) => {
         (message:Message)-[call:CALL]->(target:Vat),
         (source:Vat)-[:SYSCALL]->(syscall:Syscall)
       WHERE
-        message.result = syscall.result AND ${createFilters('message')}
+        message.result = syscall.result AND ${createFilters('message', 'syscall')}
       RETURN
         message.argSize     AS argSize,
         message.blockHeight AS blockHeight,
@@ -39,6 +42,7 @@ export const GET = async (request: NextRequest) => {
         message.elapsed     AS elapsed,
         message.method      AS method,
         message.result      AS promiseId,
+        message.runID       AS runId,
         message.target      AS targetId,
         message.time        AS time,
         'message'           AS type,
@@ -52,15 +56,16 @@ export const GET = async (request: NextRequest) => {
         (notify:Notify)-[:CALL]->(target:Vat),
         (source:Vat)-[:RESOLVE]->(resolve:Resolve)
       WHERE
-        notify.kpid = resolve.result AND ${createFilters('notify')}
+        notify.kpid = resolve.result AND ${createFilters('notify', 'resolve')}
       RETURN
         0                   AS argSize,
         notify.blockHeight  AS blockHeight,
         0                   AS crankNum,
         notify.elapsed      AS elapsed,
+        notify.kpid         AS targetId,
         notify.method       AS method,
         0                   AS promiseId,
-        notify.kpid         AS targetId,
+        notify.runID        AS runId,
         notify.time         AS time,
         'notify'            AS type,
         source.vatID        AS sourceVat,
@@ -71,11 +76,13 @@ export const GET = async (request: NextRequest) => {
     const messageResult = await session.run<Interaction>(messageQuery, {
       blockHeight: Number(blockHeight),
       endTime: endTimestamp,
+      runId,
       startTime: startTimestamp,
     });
     const notifyResult = await session.run<Interaction>(notifyQuery, {
       blockHeight: Number(blockHeight),
       endTime: endTimestamp,
+      runId,
       startTime: startTimestamp,
     });
 
@@ -86,6 +93,7 @@ export const GET = async (request: NextRequest) => {
       elapsed: record.get('elapsed'),
       method: record.get('method'),
       promiseId: record.get('promiseId'),
+      runId: record.get('runId'),
       sourceVat: record.get('sourceVat'),
       targetId: record.get('targetId'),
       targetVat: record.get('targetVat'),

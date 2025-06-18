@@ -8,8 +8,8 @@ export const GET = async (request: NextRequest) => {
     const searchParams = request.nextUrl.searchParams;
     const endTime = searchParams.get('endTime');
     const startTime = searchParams.get('startTime');
-
     const blockHeight = searchParams.get('blockHeight');
+
     const endTimestamp =
       parseFloat(endTime as string) || Math.floor(Date.now() / 1000);
     const startTimestamp = parseFloat(startTime as string) || 0;
@@ -22,18 +22,16 @@ export const GET = async (request: NextRequest) => {
       .filter(Boolean)
       .join(' AND ');
 
-    const result = await session.run<{ vatID: string; vatName: string }>(
+    const result = await session.run<{ runID: string }>(
       `
       MATCH (event)
       WHERE (event:Message OR event:Notify) AND ${filters}
-      MATCH (event)-[:CALL]->(target:Vat)
-      WITH collect(target) AS vatNodes
-      UNWIND vatNodes AS v
-      WITH DISTINCT v
-      WHERE v IS NOT NULL
-      RETURN
-        v.vatID   AS vatID,
-        v.name    AS vatName
+      MATCH (event)-[:CALL]->(:Vat)
+      WITH collect(event) AS events
+      UNWIND events AS event
+      WITH DISTINCT event.runID AS runID
+      WHERE runID IS NOT NULL
+      RETURN runID
 
     `,
       {
@@ -42,11 +40,8 @@ export const GET = async (request: NextRequest) => {
         startTime: startTimestamp,
       },
     );
-    const vats = result.records.map((record) => ({
-      name: record.get('vatName'),
-      vatID: record.get('vatID'),
-    }));
-    return new Response(JSON.stringify(vats), {
+    const uniqueRunIds = result.records.map((record) => record.get('runID'));
+    return new Response(JSON.stringify(uniqueRunIds), {
       status: 200,
     });
   } catch (error) {

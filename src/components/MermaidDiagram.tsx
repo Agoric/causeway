@@ -56,12 +56,15 @@ const MermaidDiagram = () => {
   const routerEndTime = searchParams.get('endTime') || '';
   const routerInteractionsPerPage =
     searchParams.get('interactionsPerPage') || '';
+  const routerRunId = searchParams.get('runId') || '';
   const routerStartTime = searchParams.get('startTime') || '';
   const totalPages = pages.length;
 
   const currentPage = _currentPage - 1;
 
-  const interactionsPerPage = getSanitizedInteractionsPerPage(routerInteractionsPerPage)
+  const interactionsPerPage = getSanitizedInteractionsPerPage(
+    routerInteractionsPerPage,
+  );
 
   const changeCurrentPage = (currentPage: number) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
@@ -78,7 +81,7 @@ const MermaidDiagram = () => {
       mermaidRef: mermaidRef,
       pages,
     });
-  }, [currentPage, pages.length]);
+  }, [currentPage, pages]);
 
   useEffect(() => {
     const code = generateMermaidSequenceDiagram(
@@ -93,7 +96,14 @@ const MermaidDiagram = () => {
           ? code.split('%%DIAGRAM_PAGE_BREAK%%')
           : [code],
       );
-  }, [interactions, routerBlockHeight, routerEndTime, routerStartTime, vats]);
+  }, [
+    interactions,
+    routerBlockHeight,
+    routerEndTime,
+    routerRunId,
+    routerStartTime,
+    vats,
+  ]);
 
   return (
     <div

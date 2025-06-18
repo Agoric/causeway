@@ -1,0 +1,15 @@
+diff --git a/src/context-aware-slog.js b/src/context-aware-slog.js
+index 1263928..59a9afc 100644
+--- a/src/context-aware-slog.js
++++ b/src/context-aware-slog.js
+@@ -62,2 +62,2 @@     COMMIT: {
+-      FINISH: 'cosmic-swingset-commit-finish',
+-      START: 'cosmic-swingset-commit-start',
++      FINISH: 'cosmic-swingset-commit-block-finish',
++      START: 'cosmic-swingset-commit-block-start',
+@@ -232,1 +232,4 @@         if (!finalBody.runNum) {
+-          assert(!triggerContext);
++          assert(
++            !triggerContext ||
++              triggerContext['run.trigger.type'] === 'bootstrap',
++          );
