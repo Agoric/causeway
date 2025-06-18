@@ -16,6 +16,7 @@ set -o errexit
 
 ARGS=("$@")
 CONTAINER_NAME="neo4j-database"
+DIRECTORY_PATH="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &> "/dev/null" && pwd)"
 IMAGE_NAME="neo4j"
 IMAGE_TAG="5.26.8-community-bullseye"
 
@@ -41,7 +42,7 @@ run_container() {
             --detach \
             --env "NEO4J_AUTH=neo4j/secretpassword" \
             --name "$CONTAINER_NAME" \
-            --volume "$HOME/$IMAGE_NAME/data":/data \
+            --volume "$DIRECTORY_PATH/$IMAGE_NAME/data":/data \
             "${ARGS[@]}" \
             "$IMAGE_NAME:$IMAGE_TAG"
     else

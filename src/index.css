@@ -8,12 +8,6 @@ body {
   @apply m-0;
 }
 
-code {
-  font-family:
-    source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
-  @apply bg-gray-L100 px-1 py-0.5 rounded-sm;
-}
-
 svg .actor {
   @apply cursor-help duration-300 fill-gray-L100 stroke-2 transition-all;
 }

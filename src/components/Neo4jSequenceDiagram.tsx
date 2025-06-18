@@ -47,6 +47,8 @@ const Neo4jSequenceDiagram = () => {
   const routerStartTime = searchParams.get('startTime') || '';
 
   const fetchData = async () => {
+    if (!(routerBlockHeight || routerStartTime || routerEndTime)) return;
+
     setState((prevState) => ({
       ...prevState,
       formDisabled: true,
@@ -54,22 +56,20 @@ const Neo4jSequenceDiagram = () => {
     }));
 
     try {
-      const blockHeight = searchParams.get('blockHeight');
-      const endTimestamp =
-        parseTimestamp(searchParams.get('endTime')) ?? Math.floor(now);
+      const endTimestamp = parseTimestamp(routerEndTime) ?? Math.floor(now);
       const interactionsPerPage = getSanitizedInteractionsPerPage(
         routerInteractionsPerPage,
       );
-      const startTimestamp = parseTimestamp(searchParams.get('startTime')) ?? 0;
+      const startTimestamp = parseTimestamp(routerStartTime) ?? 0;
 
       const [vats, interactionsData] = await Promise.all([
         getVats({
-          blockHeight: Number(blockHeight),
+          blockHeight: Number(routerBlockHeight),
           endTime: endTimestamp,
           startTime: startTimestamp,
         }),
         getInteractions({
-          blockHeight: Number(blockHeight),
+          blockHeight: Number(routerBlockHeight),
           endTime: endTimestamp,
           startTime: startTimestamp,
         }),
@@ -113,15 +113,19 @@ const Neo4jSequenceDiagram = () => {
   useEffect(() => {
     if (!state.connectionHealthy) return;
 
+    const currentTimestamp = Date.now();
+
     setState((prevState) => ({
       ...prevState,
       blockHeight: routerBlockHeight,
-      endTime: routerEndTime,
+      endTime: routerEndTime || String(currentTimestamp / 1000),
       interactionsPerPage: getSanitizedInteractionsPerPage(
         routerInteractionsPerPage,
       ),
-      startTime: routerStartTime,
+      startTime:
+        routerStartTime || String((currentTimestamp - 10 * 1000) / 1000),
     }));
+
     fetchData();
   }, [
     routerBlockHeight,
@@ -164,14 +168,14 @@ const Neo4jSequenceDiagram = () => {
         <input
           className={FORM_INPUT_CLASSES}
           onChange={({ target: { value: blockHeight } }) =>
-            (!blockHeight || Number(blockHeight)) &&
+            !(blockHeight && isNaN(Number(blockHeight))) &&
             setState((prevState) => ({ ...prevState, blockHeight }))
           }
           type="text"
           value={state.blockHeight}
         />
         <span className={FORM_HELP_CLASSES}>
-          Default start time is pre-filled for convenience
+          A block height to show messages from
         </span>
       </div>
 
@@ -183,6 +187,7 @@ const Neo4jSequenceDiagram = () => {
             (!startTime || Number(startTime)) &&
             setState((prevState) => ({ ...prevState, startTime }))
           }
+          placeholder="1629570627.218393"
           value={state.startTime}
           type="text"
         />
@@ -199,6 +204,7 @@ const Neo4jSequenceDiagram = () => {
             (!endTime || Number(endTime)) &&
             setState((prevState) => ({ ...prevState, endTime }))
           }
+          placeholder="1829570627.218393"
           value={state.endTime}
           type="text"
         />
@@ -233,7 +239,7 @@ const Neo4jSequenceDiagram = () => {
         className="base-button"
         onClick={() =>
           router.push(
-            `/?blockHeight=${state.blockHeight}&currentPage=0&endTime=${state.endTime}&interactionsPerPage=${state.interactionsPerPage}&startTime=${state.startTime}`,
+            `/?blockHeight=${state.blockHeight}&currentPage=1&endTime=${state.endTime}&interactionsPerPage=${state.interactionsPerPage}&startTime=${state.startTime}`,
           )
         }
         disabled={state.formDisabled}
@@ -252,24 +258,6 @@ const Neo4jSequenceDiagram = () => {
           {state.status}
         </div>
       )}
-
-      <div className="bg-gray-L50 flex flex-col gap-y-3 p-3 rounded-sm">
-        <h4 className="font-semibold text-gray-D1200">Troubleshooting</h4>
-        <ul className="pl-5 list-disc">
-          <li>
-            Make sure the API server is running (default:{' '}
-            <code>http://localhost:3001</code>)
-          </li>
-          <li>The backend server manages the Neo4j connection securely</li>
-          <li>
-            Times in the database are Unix timestamps (e.g., 1629570627.218393)
-          </li>
-          <li>
-            {`Try adjusting the "Interactions Per Page" value to break diagrams into manageable pages`}
-          </li>
-          <li>If you encounter errors, check the server logs for details</li>
-        </ul>
-      </div>
     </div>
   );
 };
