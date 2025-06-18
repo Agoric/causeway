@@ -323,7 +323,7 @@ export const makeSlogSender = async (options) => {
                 }
               )
              SET vat.name = $name, vat.createdAt = $time`,
-            prepareParams({ name, time, vatID }),
+            prepareParams({ name: name || vatID, time, vatID }),
           );
         }),
     [SLOG_TYPES.DELIVER]:

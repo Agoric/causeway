@@ -1,23 +1,45 @@
 services:
   agd:
     container_name: agoric
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        cd /usr/src/upgrade-test-scripts
+        echo '
+          {
+            "dependencies": {
+              "neo4j-driver": "^5.28.1"
+            },
+            "name": "upgrade-test-scripts-local",
+            "packageManager": "yarn@1.22.22",
+            "type": "module"
+          }' > package.json
+        touch yarn.lock
+        yarn install
+        ./start_agd.sh
+    environment:
+      DEBUG: SwingSet:ls,SwingSet:vat
+      DEST: 1
+      NEO4J_URI: neo4j://neo4j:7687
+      SLOGSENDER: /usr/src/upgrade-test-scripts/slogger.js
     image: ghcr.io/agoric/agoric-3-proposals:latest
     ports:
       - 26656:26656
       - 26657:26657
       - 1317:1317
       - 9090:9090
-    environment:
-      DEST: 1
-      DEBUG: 'SwingSet:ls,SwingSet:vat'
     volumes:
-      - ./scripts/a3p.slog:/usr/src/upgrade-test-scripts/slog.slog
+      - ${PWD}/scripts/a3p.slog:/usr/src/upgrade-test-scripts/slog.slog
+      - ${PWD}/scripts/slogger.js:/usr/src/upgrade-test-scripts/slogger.js
 
   neo4j:
+    environment:
+      NEO4J_AUTH: neo4j/secretpassword
     container_name: neo4j
-    image: neo4j:latest
+    image: neo4j:5.26.8-community-bullseye
     ports:
       - 7474:7474
       - 7687:7687
-    environment:
-      - NEO4J_AUTH=neo4j/secretpassword
+    volumes:
+      - ${PWD}/neo4j/data:/data
