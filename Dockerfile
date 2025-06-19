@@ -27,7 +27,7 @@ ENV SOURCE=/source
 
 WORKDIR "$SOURCE"
 
-COPY --from=build .next .yarn .yarnrc.yml node_modules package.json yarn.lock "$SOURCE"
+COPY --from=build "$SOURCE/.next" "$SOURCE/.yarn" "$SOURCE/.yarnrc.yml" "$SOURCE/node_modules" "$SOURCE/package.json" "$SOURCE/yarn.lock" "$SOURCE"
 
 EXPOSE $PORT
 
