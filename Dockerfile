@@ -29,6 +29,14 @@ WORKDIR "$SOURCE"
 
 COPY --from=build "$SOURCE/.next" "$SOURCE/.yarn" "$SOURCE/.yarnrc.yml" "$SOURCE/node_modules" "$SOURCE/package.json" "$SOURCE/yarn.lock" "$SOURCE"
 
+RUN <<-DOCKER_SCRIPT
+    set -o errexit -o nounset
+
+    apt-get update
+    apt-get install curl --yes
+    rm -rf /var/lib/apt/lists/*
+DOCKER_SCRIPT
+
 EXPOSE $PORT
 
 ENTRYPOINT ["yarn", "--cwd", "$SOURCE", "start", "$PORT"]
