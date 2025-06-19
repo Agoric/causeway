@@ -7,6 +7,7 @@ export const GET = async (request: NextRequest) => {
   try {
     const searchParams = request.nextUrl.searchParams;
     const endTime = searchParams.get('endTime');
+    const runId = searchParams.get('runId');
     const startTime = searchParams.get('startTime');
 
     const blockHeight = searchParams.get('blockHeight');
@@ -17,6 +18,7 @@ export const GET = async (request: NextRequest) => {
     const filters = [
       blockHeight && 'event.blockHeight = $blockHeight',
       endTimestamp && 'event.time <= $endTime',
+      runId && 'event.runID = $runId',
       startTimestamp && 'event.time >= $startTime',
     ]
       .filter(Boolean)
@@ -39,6 +41,7 @@ export const GET = async (request: NextRequest) => {
       {
         blockHeight: Number(blockHeight),
         endTime: endTimestamp,
+        runId,
         startTime: startTimestamp,
       },
     );
