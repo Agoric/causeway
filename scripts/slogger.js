@@ -1,5 +1,4 @@
 import { readFileSync, writeFileSync } from 'fs';
-import { open } from 'fs/promises';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { auth, driver as createDriver, int as neoInt } from 'neo4j-driver';
@@ -7,7 +6,6 @@ import { makeContextualSlogProcessor } from '@agoric/telemetry/src/context-aware
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CONTEXT_FILE = 'slog-context.json';
-const LOGS_PATH = 'debug.log';
 const FILE_ENCODING = 'utf8';
 export const SLOG_TYPES = {
   CLIST: 'clist',
@@ -184,24 +182,10 @@ export const makeSlogSender = async (options) => {
     else return value;
   };
 
-  /**
-   * @param {string} log
-   * @returns {Promise<void>}
-   */
-  const writeToStream = (log) =>
-    new Promise((resolve) => {
-      const message = log + '\n';
-
-      if (!logsFileStream.write(message)) logsFileStream.once('drain', resolve);
-      else resolve();
-    });
-
   const contextualSlogProcessor = makeContextualSlogProcessor(
     {},
     persistenceUtils,
   );
-  const logsFileHandler = await open(`${__dirname}/${LOGS_PATH}`, 'w');
-  const logsFileStream = logsFileHandler.createWriteStream({ autoClose: true });
   await setupIndexes(createNewSession());
 
   /** @type {Slog['blockHeight']} */
@@ -272,29 +256,9 @@ export const makeSlogSender = async (options) => {
               console.warn('Failed to extract method name:', error);
             }
 
-            addPromisesToChain(
-              () =>
-                writeToStream(
-                  `Indexing to Message with params: ${serializeSlogObj({
-                    // @ts-ignore
-                    argSize: methargs.body.length,
-                    blockHeight: currentBlockHeight,
-                    crankNum,
-                    deliveryNum,
-                    elapsed: time - lastBlockTime,
-                    methargs: methodArguments || 'unknown',
-                    method,
-                    result,
-                    runID,
-                    target,
-                    time,
-                    type,
-                    vatID,
-                  })}`,
-                ),
-              async () => {
-                await session.run(
-                  `CREATE (
+            addPromisesToChain(async () => {
+              await session.run(
+                `CREATE (
                     message:Message {
                       argSize: $argSize,
                       blockHeight: $blockHeight,
@@ -315,48 +279,32 @@ export const makeSlogSender = async (options) => {
                  CREATE (message)-[
                     :CALL
                   ]->(vat)`,
-                  prepareParams({
-                    argSize: methargs.body.length,
-                    blockHeight: currentBlockHeight,
-                    crankNum,
-                    deliveryNum,
-                    elapsed: time - lastBlockTime,
-                    methargs: methodArguments || 'unknown',
-                    method,
-                    result,
-                    runID,
-                    target,
-                    time,
-                    type,
-                    vatID,
-                  }),
-                );
-              },
-            );
+                prepareParams({
+                  argSize: methargs.body.length,
+                  blockHeight: currentBlockHeight,
+                  crankNum,
+                  deliveryNum,
+                  elapsed: time - lastBlockTime,
+                  methargs: methodArguments || 'unknown',
+                  method,
+                  result,
+                  runID,
+                  target,
+                  time,
+                  type,
+                  vatID,
+                }),
+              );
+            });
 
             break;
           }
           case 'notify': {
             const [, resolutions] = kd;
             for (const [kpid, { state = 'unknown' }] of resolutions) {
-              addPromisesToChain(
-                () =>
-                  writeToStream(
-                    `Indexing to Notify with params: ${serializeSlogObj({
-                      // @ts-ignore
-                      blockHeight: currentBlockHeight,
-                      elapsed: time - lastBlockTime,
-                      kpid,
-                      runID,
-                      state,
-                      time,
-                      type,
-                      vatID,
-                    })}`,
-                  ),
-                async () => {
-                  await session.run(
-                    `CREATE (
+              addPromisesToChain(async () => {
+                await session.run(
+                  `CREATE (
                       notify:Notify {
                         blockHeight: $blockHeight,
                         elapsed: $elapsed,
@@ -372,19 +320,18 @@ export const makeSlogSender = async (options) => {
                    CREATE (notify)-[
                       :CALL
                     ]->(vat)`,
-                    prepareParams({
-                      blockHeight: currentBlockHeight,
-                      elapsed: time - lastBlockTime,
-                      kpid,
-                      runID,
-                      state,
-                      time,
-                      type,
-                      vatID,
-                    }),
-                  );
-                },
-              );
+                  prepareParams({
+                    blockHeight: currentBlockHeight,
+                    elapsed: time - lastBlockTime,
+                    kpid,
+                    runID,
+                    state,
+                    time,
+                    type,
+                    vatID,
+                  }),
+                );
+              });
             }
 
             break;
@@ -408,23 +355,9 @@ export const makeSlogSender = async (options) => {
           case 'resolve': {
             const [_, __, parts] = ksc;
             for (const [kp] of parts) {
-              addPromisesToChain(
-                () =>
-                  writeToStream(
-                    `Indexing to Resolve with params: ${serializeSlogObj({
-                      // @ts-ignore
-                      blockHeight: currentBlockHeight,
-                      elapsed: time - lastBlockTime,
-                      result: kp,
-                      runID,
-                      time,
-                      type,
-                      vatID,
-                    })}`,
-                  ),
-                async () => {
-                  await session.run(
-                    `CREATE (
+              addPromisesToChain(async () => {
+                await session.run(
+                  `CREATE (
                       resolve:Resolve {
                         blockHeight: $blockHeight,
                         elapsed: $elapsed,
@@ -439,18 +372,17 @@ export const makeSlogSender = async (options) => {
                    CREATE (vat)-[
                       :RESOLVE
                     ]->(resolve)`,
-                    prepareParams({
-                      blockHeight: currentBlockHeight,
-                      elapsed: time - lastBlockTime,
-                      result: kp,
-                      runID,
-                      time,
-                      type,
-                      vatID,
-                    }),
-                  );
-                },
-              );
+                  prepareParams({
+                    blockHeight: currentBlockHeight,
+                    elapsed: time - lastBlockTime,
+                    result: kp,
+                    runID,
+                    time,
+                    type,
+                    vatID,
+                  }),
+                );
+              });
             }
             break;
           }
@@ -466,26 +398,9 @@ export const makeSlogSender = async (options) => {
               console.warn('Failed to extract method name:', error);
             }
 
-            addPromisesToChain(
-              () =>
-                writeToStream(
-                  `Indexing to Resolve with params: ${serializeSlogObj({
-                    // @ts-ignore
-                    blockHeight: currentBlockHeight,
-                    elapsed: time - lastBlockTime,
-                    methargs: methodArguments,
-                    method,
-                    result,
-                    runID,
-                    target,
-                    time,
-                    type,
-                    vatID,
-                  })}`,
-                ),
-              async () => {
-                await session.run(
-                  `CREATE (
+            addPromisesToChain(async () => {
+              await session.run(
+                `CREATE (
                     syscall:Syscall {
                       blockHeight: $blockHeight,
                       elapsed: $elapsed,
@@ -503,21 +418,20 @@ export const makeSlogSender = async (options) => {
                  CREATE (vat)-[
                     :SYSCALL
                  ]->(syscall)`,
-                  prepareParams({
-                    blockHeight: currentBlockHeight,
-                    elapsed: time - lastBlockTime,
-                    methargs: methodArguments,
-                    method,
-                    result,
-                    runID,
-                    target,
-                    time,
-                    type,
-                    vatID,
-                  }),
-                );
-              },
-            );
+                prepareParams({
+                  blockHeight: currentBlockHeight,
+                  elapsed: time - lastBlockTime,
+                  methargs: methodArguments,
+                  method,
+                  result,
+                  runID,
+                  target,
+                  time,
+                  type,
+                  vatID,
+                }),
+              );
+            });
 
             break;
           }
@@ -538,14 +452,6 @@ export const makeSlogSender = async (options) => {
 
   return Object.assign(slogSender, {
     forceFlush: () => promiseChain,
-    shutdown: () =>
-      promiseChain
-        .then(() => driver.close())
-        .then(
-          () =>
-            new Promise((resolve) =>
-              logsFileStream.once('finish', () => resolve(null)),
-            ),
-        ),
+    shutdown: () => promiseChain.then(() => driver.close()),
   });
 };
