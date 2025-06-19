@@ -34,7 +34,7 @@ const addParticipantTooltips = (
         interactions[
           currentPage * interactionsPerPage + Number(messageNumber) - 1
         ];
-      if (!interaction.crankNum) return;
+      if (!interaction?.crankNum) return;
 
       const horizontalPadding = 6;
       const verticalPadding = 3;
@@ -75,7 +75,7 @@ const addParticipantTooltips = (
       backgroundProvider.setAttribute('x', String(bbox.x - horizontalPadding));
       backgroundProvider.setAttribute('y', String(bbox.y - verticalPadding));
       backgroundProvider.classList.add(
-        ...'fill-yellow-100 stroke-gray-L200'.split(' '),
+        ...'fill-yellow-100 stroke-yellow-200'.split(' '),
       );
 
       group.insertBefore(backgroundProvider, toolTip);

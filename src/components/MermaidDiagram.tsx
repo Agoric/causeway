@@ -39,10 +39,6 @@ mermaid.initialize({
   },
 });
 
-type MermaidDiagramProps = {
-  code: string;
-};
-
 const MermaidDiagram = () => {
   const { interactions, vats } = useContext(InteractionContext);
   const pathName = usePathname();

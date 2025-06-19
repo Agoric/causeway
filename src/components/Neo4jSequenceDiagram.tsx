@@ -11,6 +11,7 @@ import {
 import { getSanitizedInteractionsPerPage, parseTimestamp } from 'helpers';
 
 const EXTRACT_VAT_ID_REGEX = /^v([0-9]*)$/;
+const IS_NUMBER_REGEX = /^[0-9]+(.[0-9]*)?$/;
 
 const FORM_GROUP_CLASSES = 'flex flex-col gap-y-1';
 const FORM_HELP_CLASSES = 'text-gray-D600 text-xs';
@@ -43,16 +44,24 @@ const Neo4jSequenceDiagram = () => {
     status: '',
   });
 
-  const routerBlockHeight = searchParams.get('blockHeight') || '';
-  const routerEndTime = searchParams.get('endTime') || '';
+  let routerBlockHeight = searchParams.get('blockHeight') || '';
+  let routerEndTime = searchParams.get('endTime') || '';
   const routerInteractionsPerPage =
     searchParams.get('interactionsPerPage') || '';
   const routerRunId = searchParams.get('runId') || '';
-  const routerStartTime = searchParams.get('startTime') || '';
+  let routerStartTime = searchParams.get('startTime') || '';
+
+  if (!routerBlockHeight.match(IS_NUMBER_REGEX)) routerBlockHeight = '';
+  if (!routerEndTime.match(IS_NUMBER_REGEX)) routerEndTime = '';
+  if (!routerStartTime.match(IS_NUMBER_REGEX)) routerStartTime = '';
 
   const fetchData = async () => {
     if (!(routerBlockHeight || routerEndTime || routerRunId || routerStartTime))
-      return;
+      return setData({
+        interactions: [],
+        runIds: [],
+        vats: [],
+      });
 
     setState((prevState) => ({
       ...prevState,
@@ -127,18 +136,15 @@ const Neo4jSequenceDiagram = () => {
   useEffect(() => {
     if (!state.connectionHealthy) return;
 
-    const currentTimestamp = Date.now();
-
     setState((prevState) => ({
       ...prevState,
       blockHeight: routerBlockHeight,
-      endTime: routerEndTime || String(currentTimestamp / 1000),
+      endTime: routerEndTime,
       interactionsPerPage: getSanitizedInteractionsPerPage(
         routerInteractionsPerPage,
       ),
       runId: routerRunId,
-      startTime:
-        routerStartTime || String((currentTimestamp - 10 * 1000) / 1000),
+      startTime: routerStartTime,
     }));
 
     fetchData();
@@ -184,7 +190,7 @@ const Neo4jSequenceDiagram = () => {
         <input
           className={FORM_INPUT_CLASSES}
           onChange={({ target: { value: blockHeight } }) =>
-            !(blockHeight && isNaN(Number(blockHeight))) &&
+            (!blockHeight || blockHeight.match(IS_NUMBER_REGEX)) &&
             setState((prevState) => ({ ...prevState, blockHeight }))
           }
           type="text"
@@ -200,7 +206,7 @@ const Neo4jSequenceDiagram = () => {
         <input
           className={FORM_INPUT_CLASSES}
           onChange={({ target: { value: startTime } }) =>
-            (!startTime || Number(startTime)) &&
+            (!startTime || startTime.match(IS_NUMBER_REGEX)) &&
             setState((prevState) => ({ ...prevState, startTime }))
           }
           placeholder="1629570627.218393"
@@ -217,7 +223,7 @@ const Neo4jSequenceDiagram = () => {
         <input
           className={FORM_INPUT_CLASSES}
           onChange={({ target: { value: endTime } }) =>
-            (!endTime || Number(endTime)) &&
+            (!endTime || endTime.match(IS_NUMBER_REGEX)) &&
             setState((prevState) => ({ ...prevState, endTime }))
           }
           placeholder="1829570627.218393"
@@ -278,15 +284,13 @@ const Neo4jSequenceDiagram = () => {
           router.push(
             '/?' +
               [
-                !isNaN(Number(state.blockHeight)) &&
-                  `blockHeight=${state.blockHeight}`,
+                state.blockHeight && `blockHeight=${state.blockHeight}`,
                 'currentPage=1',
                 state.endTime && `endTime=${state.endTime}`,
                 state.interactionsPerPage &&
                   `interactionsPerPage=${state.interactionsPerPage}`,
                 state.runId && `runId=${state.runId}`,
-                !isNaN(Number(state.startTime)) &&
-                  `startTime=${state.startTime}`,
+                state.startTime && `startTime=${state.startTime}`,
               ]
                 .filter(Boolean)
                 .join('&'),
