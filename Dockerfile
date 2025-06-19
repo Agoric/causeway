@@ -35,6 +35,8 @@ COPY --from=build "$SOURCE/.yarnrc.yml" "$SOURCE/package.json" "$SOURCE/yarn.loc
 RUN <<-DOCKER_SCRIPT
     set -o errexit -o nounset
 
+    corepack enable
+
     apt-get update
     apt-get install curl --yes
     rm --force --recursive /var/lib/apt/lists/*

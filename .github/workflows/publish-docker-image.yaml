@@ -39,7 +39,7 @@ jobs:
             file: Dockerfile
             platforms: ${{ env.PLATFORM }}
             push: true
-            tags: ${{ env.REGISTRY }}/agoric/causeaway:${{ env.BUILD_TAG }}
+            tags: ${{ env.REGISTRY }}/agoric/causeway:${{ env.BUILD_TAG }}
 
 name: Publish Docker Image
 
