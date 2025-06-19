@@ -34,7 +34,7 @@ RUN <<-DOCKER_SCRIPT
 
     apt-get update
     apt-get install curl --yes
-    rm -rf /var/lib/apt/lists/*
+    rm --force --recursive /var/lib/apt/lists/*
 DOCKER_SCRIPT
 
 EXPOSE $PORT
