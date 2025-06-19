@@ -445,16 +445,9 @@ export const makeSlogSender = async (options) => {
    * @param {Slog} slog
    */
   const slogSender = (slog) => {
-    try {
-      if (!lastBlockTime) lastBlockTime = slog.time;
-      contextualSlogProcessor(slog);
-      // return callBacks[slog.type]?.(contextualSlogProcessor(slog));
-    } catch (err) {
-      console.error(
-        `Error while processing slog '${serializeSlogObj(slog)}': `,
-        err,
-      );
-    }
+    if (!lastBlockTime) lastBlockTime = slog.time;
+    const contextualSlog = contextualSlogProcessor(slog);
+    return callBacks[slog.type]?.(contextualSlog);
   };
 
   return Object.assign(slogSender, {

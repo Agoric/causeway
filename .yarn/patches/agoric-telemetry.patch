@@ -7,32 +7,9 @@ index 1263928..59a9afc 100644
 -      START: 'cosmic-swingset-commit-start',
 +      FINISH: 'cosmic-swingset-commit-block-finish',
 +      START: 'cosmic-swingset-commit-block-start',
-@@ -101,0 +101,9 @@ 
-+/**
-+ * @param {Context} slogObj
-+ */
-+const serializeSlogObj = slogObj =>
-+  JSON.stringify(slogObj, (_, value) =>
-+    // eslint-disable-next-line valid-typeof
-+    typeof value === BigInt.name.toLowerCase() ? Number(value) : value,
-+  );
-+
-@@ -241,1 +241,4 @@         if (!finalBody.runNum) {
+@@ -232,1 +232,4 @@         if (!finalBody.runNum) {
 -          assert(!triggerContext);
 +          assert(
 +            !triggerContext ||
 +              triggerContext['run.trigger.type'] === 'bootstrap',
-+          );
-@@ -282,1 +282,4 @@         if (replayContext) {
--          assert(finalBody.replay);
-+          assert(
-+            finalBody.replay,
-+            `Non-replay delivery when replay context is ${serializeSlogObj(replayContext)}`,
-+          );
-@@ -292,1 +292,5 @@         } else {
--          assert(!!crankContext && !finalBody.replay);
-+          assert(!!crankContext, 'No crank context found for current delivery');
-+          assert(
-+            !finalBody.replay,
-+            'Replaying delivery without a replay context',
 +          );
