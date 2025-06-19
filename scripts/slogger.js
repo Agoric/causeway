@@ -447,7 +447,8 @@ export const makeSlogSender = async (options) => {
   const slogSender = (slog) => {
     try {
       if (!lastBlockTime) lastBlockTime = slog.time;
-      return callBacks[slog.type]?.(contextualSlogProcessor(slog));
+      contextualSlogProcessor(slog);
+      // return callBacks[slog.type]?.(contextualSlogProcessor(slog));
     } catch (err) {
       console.error(
         `Error while processing slog '${serializeSlogObj(slog)}': `,
