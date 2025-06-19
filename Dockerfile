@@ -27,7 +27,10 @@ ENV SOURCE=/source
 
 WORKDIR "$SOURCE"
 
-COPY --from=build "$SOURCE/.next" "$SOURCE/.yarn" "$SOURCE/.yarnrc.yml" "$SOURCE/node_modules" "$SOURCE/package.json" "$SOURCE/yarn.lock" "$SOURCE"
+COPY --from=build "$SOURCE/.next" "$SOURCE/.next"
+COPY --from=build "$SOURCE/.yarn" "$SOURCE/.yarn"
+COPY --from=build "$SOURCE/node_modules" "$SOURCE/node_modules"
+COPY --from=build "$SOURCE/.yarnrc.yml" "$SOURCE/package.json" "$SOURCE/yarn.lock" "$SOURCE"
 
 RUN <<-DOCKER_SCRIPT
     set -o errexit -o nounset
