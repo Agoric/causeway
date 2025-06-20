@@ -2,64 +2,14 @@ import { readFileSync, writeFileSync } from 'fs';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { auth, driver as createDriver, int as neoInt } from 'neo4j-driver';
-import { makeContextualSlogProcessor } from '@agoric/telemetry/src/context-aware-slog.js';
+import {
+  makeContextualSlogProcessor,
+  SLOG_TYPES,
+} from '@agoric/telemetry/src/context-aware-slog.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CONTEXT_FILE = 'slog-context.json';
 const FILE_ENCODING = 'utf8';
-export const SLOG_TYPES = {
-  CLIST: 'clist',
-  CONSOLE: 'console',
-  COSMIC_SWINGSET: {
-    AFTER_COMMIT_STATS: 'cosmic-swingset-after-commit-stats',
-    BEGIN_BLOCK: 'cosmic-swingset-begin-block',
-    BOOTSTRAP_BLOCK: {
-      FINISH: 'cosmic-swingset-bootstrap-block-finish',
-      START: 'cosmic-swingset-bootstrap-block-start',
-    },
-    COMMIT: {
-      FINISH: 'cosmic-swingset-commit-block-finish',
-      START: 'cosmic-swingset-commit-block-start',
-    },
-    END_BLOCK: {
-      FINISH: 'cosmic-swingset-end-block-finish',
-      START: 'cosmic-swingset-end-block-start',
-    },
-    RUN: {
-      FINISH: 'cosmic-swingset-run-finish',
-      START: 'cosmic-swingset-run-start',
-    },
-    UPGRADE: {
-      FINISH: 'cosmic-swingset-upgrade-finish',
-      START: 'cosmic-swingset-upgrade-start',
-    },
-  },
-  COSMIC_SWINGSET_TRIGGERS: {
-    BRIDGE_INBOUND: 'cosmic-swingset-bridge-inbound',
-    DELIVER_INBOUND: 'cosmic-swingset-deliver-inbound',
-    TIMER_POLL: 'cosmic-swingset-timer-poll',
-    INSTALL_BUNDLE: 'cosmic-swingset-install-bundle',
-  },
-  CRANK: {
-    FINISH: 'crank-finish',
-    START: 'crank-start',
-  },
-  CREATE_VAT: 'create-vat',
-  DELIVER: 'deliver',
-  DELIVER_RESULT: 'deliver-result',
-  KERNEL: {
-    INIT: {
-      FINISH: 'kernel-init-finish',
-      START: 'kernel-init-start',
-    },
-  },
-  REPLAY: {
-    FINISH: 'finish-replay',
-    START: 'start-replay',
-  },
-  SYSCALL: 'syscall',
-  SYSCALL_RESULT: 'syscall-result',
-};
 
 // @ts-ignore
 if (!globalThis.assert)
@@ -101,7 +51,7 @@ const getContextFilePersistenceUtils = (filePath) => {
 };
 
 /**
- * @param {Context} slogObj
+ * @param {any} slogObj
  */
 const serializeSlogObj = (slogObj) =>
   JSON.stringify(slogObj, (_, value) =>
@@ -118,6 +68,8 @@ const setupIndexes = async (session) => {
     'CREATE INDEX notify_kpid IF NOT EXISTS FOR (notify:Notify) ON (notify.kpid)',
     'CREATE INDEX notify_runId IF NOT EXISTS FOR (notify:Notify) ON (notify.runID)',
     'CREATE INDEX resolve_result IF NOT EXISTS FOR (resolve:Resolve) ON (resolve.result)',
+    'CREATE INDEX run_block_height IF NOT EXISTS FOR (run:Run) ON (run.blockHeight)',
+    'CREATE INDEX run_id IF NOT EXISTS FOR (run:Run) ON (run.id)',
     'CREATE INDEX syscall_result IF NOT EXISTS FOR (syscall:Syscall) ON (syscall.result)',
   ];
 
@@ -195,12 +147,44 @@ export const makeSlogSender = async (options) => {
   let promiseChain = Promise.resolve();
   const session = createNewSession();
 
-  const callBacks = {
-    [SLOG_TYPES.COSMIC_SWINGSET.BEGIN_BLOCK]:
-      /**
-       * @param {ReturnType<typeof contextualSlogProcessor>} slog
-       */
-      ({ body: { blockHeight, blockTime }, time }) => {
+  /**
+   * @param {Slog} slog
+   */
+  const slogSender = (slog) => {
+    if (!lastBlockTime) lastBlockTime = slog.time;
+    const contextualSlog = contextualSlogProcessor(slog);
+
+    const {
+      attributes: {
+        'block.height': blockHeight,
+        'block.time': blockTime,
+        'crank.deliveryNum': deliveryNum,
+        'run.id': _runId,
+        'run.num': runNumber,
+        'run.trigger.bundleHash': triggerBundleHash,
+        'run.trigger.msgIdx': triggerMsgIdx,
+        'run.trigger.sender': triggerSender,
+        'run.trigger.source': triggerSource,
+        'run.trigger.txHash': triggerTxHash,
+        'run.trigger.type': runTriggerType,
+      },
+      body: {
+        crankNum,
+        kd,
+        ksc,
+        name,
+        phase,
+        type,
+        usedBeans,
+        vatID,
+      },
+      time,
+    } = contextualSlog;
+
+    const runId = _runId || 'N/A';
+
+    switch (slog.type) {
+      case SLOG_TYPES.COSMIC_SWINGSET.BEGIN_BLOCK: {
         currentBlockHeight = blockHeight;
         addPromisesToChain(async () => {
           await session.run(
@@ -209,16 +193,73 @@ export const makeSlogSender = async (options) => {
                   height: $height
                 }
               )
-             SET block.time = $time, block.blockTime = $blockTime`,
+             SET
+              block.time = $time,
+              block.blockTime = $blockTime
+            `,
             prepareParams({ blockTime, height: blockHeight, time }),
           );
         });
-      },
-    [SLOG_TYPES.CREATE_VAT]:
-      /**
-       * @param {ReturnType<typeof contextualSlogProcessor>} slog
-       */
-      ({ body: { name, vatID }, time }) =>
+
+        break;
+      }
+      case SLOG_TYPES.COSMIC_SWINGSET.RUN.FINISH:
+      case SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.BRIDGE_INBOUND:
+      case SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.DELIVER_INBOUND:
+      case SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.INSTALL_BUNDLE:
+      case SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.TIMER_POLL: {
+        const unknowDataIdentifier = 'unknown';
+
+        let currentRunId = _runId;
+        let triggerType = runTriggerType;
+
+        if (
+          !currentRunId ||
+          currentRunId.startsWith(`${unknowDataIdentifier}-`)
+        )
+          currentRunId = `${phase}-${blockHeight}-${runNumber}`;
+        if (!triggerType || triggerType === unknowDataIdentifier)
+          triggerType = phase;
+
+        addPromisesToChain(async () => {
+          await session.run(
+            `CREATE (
+                run:Run {
+                  blockHeight:        $blockHeight,
+                  blockTime:          $blockTime,
+                  computrons:         $computrons,
+                  id:                 $id,
+                  number:             $number,
+                  time:               $time,
+                  triggerBundleHash:  $triggerBundleHash,
+                  triggerMsgIdx:      $triggerMsgIdx,
+                  triggerSender:      $triggerSender,
+                  triggerSource:      $triggerSource,
+                  triggerTxHash:      $triggerTxHash,
+                  triggerType:        $triggerType
+                }
+              )
+            `,
+            prepareParams({
+              blockHeight,
+              blockTime,
+              computrons: usedBeans || 0,
+              id: currentRunId,
+              number: runNumber || 'N/A',
+              time,
+              triggerBundleHash: triggerBundleHash || 'N/A',
+              triggerMsgIdx: triggerMsgIdx || 0,
+              triggerSender: triggerSender || 'N/A',
+              triggerSource: triggerSource || 'N/A',
+              triggerTxHash: triggerTxHash || 'N/A',
+              triggerType,
+            }),
+          );
+        });
+
+        break;
+      }
+      case SLOG_TYPES.CREATE_VAT: {
         addPromisesToChain(async () => {
           await session.run(
             `MERGE (
@@ -226,19 +267,17 @@ export const makeSlogSender = async (options) => {
                   vatID: $vatID
                 }
               )
-             SET vat.name = $name, vat.createdAt = $time`,
+             SET
+              vat.name = $name,
+              vat.createdAt = $time
+            `,
             prepareParams({ name: name || vatID, time, vatID }),
           );
-        }),
-    [SLOG_TYPES.DELIVER]:
-      /**
-       * @param {ReturnType<typeof contextualSlogProcessor>} slog
-       */
-      ({ attributes, body, time }) => {
-        const { crankNum, kd, type, vatID } = body;
-        const deliveryNum = body.deliveryNum || attributes['crank.deliveryNum'];
-        const runID = attributes['run.id'] || 'N/A';
+        });
 
+        break;
+      }
+      case SLOG_TYPES.DELIVER: {
         if (!kd) return;
         const [deliveryType] = kd;
 
@@ -268,7 +307,7 @@ export const makeSlogSender = async (options) => {
                       methargs: $methargs,
                       method: $method,
                       result: $result,
-                      runID: $runID,
+                      runID: $runId,
                       target: $target,
                       time: $time,
                       type: $type
@@ -288,7 +327,7 @@ export const makeSlogSender = async (options) => {
                   methargs: methodArguments || 'unknown',
                   method,
                   result,
-                  runID,
+                  runId,
                   target,
                   time,
                   type,
@@ -310,7 +349,7 @@ export const makeSlogSender = async (options) => {
                         elapsed: $elapsed,
                         kpid: $kpid,
                         method: $state,
-                        runID: $runID,
+                        runID: $runId,
                         time: $time,
                         type: $type
                       }
@@ -324,7 +363,7 @@ export const makeSlogSender = async (options) => {
                     blockHeight: currentBlockHeight,
                     elapsed: time - lastBlockTime,
                     kpid,
-                    runID,
+                    runId,
                     state,
                     time,
                     type,
@@ -339,15 +378,10 @@ export const makeSlogSender = async (options) => {
           default:
             break;
         }
-      },
-    [SLOG_TYPES.SYSCALL]:
-      /**
-       * @param {ReturnType<typeof contextualSlogProcessor>} slog
-       */
-      ({ attributes, body, time }) => {
-        const { ksc, type, vatID } = body;
-        const runID = attributes['run.id'] || 'N/A';
 
+        break;
+      }
+      case SLOG_TYPES.SYSCALL: {
         if (!ksc) return;
         const [kernelSyscallType] = ksc;
 
@@ -362,7 +396,7 @@ export const makeSlogSender = async (options) => {
                         blockHeight: $blockHeight,
                         elapsed: $elapsed,
                         result: $result,
-                        runID: $runID,
+                        runID: $runId,
                         time: $time,
                         type: $type
                       }
@@ -376,7 +410,7 @@ export const makeSlogSender = async (options) => {
                     blockHeight: currentBlockHeight,
                     elapsed: time - lastBlockTime,
                     result: kp,
-                    runID,
+                    runId,
                     time,
                     type,
                     vatID,
@@ -407,7 +441,7 @@ export const makeSlogSender = async (options) => {
                       methargs: $methargs,
                       method: $method,
                       result: $result,
-                      runID: $runID,
+                      runID: $runId,
                       target: $target,
                       time: $time,
                       type: $type
@@ -424,7 +458,7 @@ export const makeSlogSender = async (options) => {
                   methargs: methodArguments,
                   method,
                   result,
-                  runID,
+                  runId,
                   target,
                   time,
                   type,
@@ -438,16 +472,12 @@ export const makeSlogSender = async (options) => {
           default:
             break;
         }
-      },
-  };
 
-  /**
-   * @param {Slog} slog
-   */
-  const slogSender = (slog) => {
-    if (!lastBlockTime) lastBlockTime = slog.time;
-    const contextualSlog = contextualSlogProcessor(slog);
-    return callBacks[slog.type]?.(contextualSlog);
+        break;
+      }
+      default:
+        break;
+    }
   };
 
   return Object.assign(slogSender, {

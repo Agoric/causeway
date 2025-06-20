@@ -2,11 +2,23 @@ diff --git a/src/context-aware-slog.js b/src/context-aware-slog.js
 index 1263928..59a9afc 100644
 --- a/src/context-aware-slog.js
 +++ b/src/context-aware-slog.js
+@@ -51,1 +51,1 @@ 
+-const SLOG_TYPES = {
++export const SLOG_TYPES = {
 @@ -62,2 +62,2 @@     COMMIT: {
 -      FINISH: 'cosmic-swingset-commit-finish',
 -      START: 'cosmic-swingset-commit-start',
 +      FINISH: 'cosmic-swingset-commit-block-finish',
 +      START: 'cosmic-swingset-commit-block-start',
+@@ -69,0 +69,1 @@     },
++    KERNEL_UPGRADE_EVENTS: 'cosmic-swingset-inject-kernel-upgrade-events',
+@@ -74,0 +74,4 @@     },
++    UPGRADE: {
++      FINISH: 'cosmic-swingset-upgrade-finish',
++      START: 'cosmic-swingset-upgrade-start',
++    },
+@@ -85,0 +85,1 @@   },
++  CREATE_VAT: 'create-vat',
 @@ -232,1 +232,4 @@         if (!finalBody.runNum) {
 -          assert(!triggerContext);
 +          assert(

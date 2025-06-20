@@ -36,6 +36,18 @@ export const getInteractions = async ({
   return await response.json();
 };
 
+export const getRunId = async ({
+  runId,
+}: {
+  runId: string;
+}): Promise<Run> => {
+  const response = await fetch(`${API_BASE}/run-id/${runId}`);
+  if (!response.ok)
+    throw new Error(`Error fetching vats: ${response.statusText}`);
+
+  return await response.json();
+};
+
 export const getRunIds = async ({
   blockHeight,
   endTime,

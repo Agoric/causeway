@@ -167,6 +167,21 @@ type MakeSlogSenderOptions = MakeSlogSenderCommonOptions &
 
 type Message = { methargs: SwingSetCapData; result: string | undefined | null };
 
+type Run = {
+  blockHeight: Slog['blockHeight'];
+  blockTime: Slog['blockTime'];
+  computrons: Slog['usedBeans'];
+  id: Context['run.id'];
+  number: Context['run.num'];
+  time: Slog['time'];
+  triggerBundleHash: Context['run.trigger.bundleHash'];
+  triggerMsgIdx: Context['run.trigger.msgIdx'];
+  triggerSender: Context['run.trigger.sender'];
+  triggerSource: Context['run.trigger.source'];
+  triggerTxHash: Context['run.trigger.txHash'];
+  triggerType: Context['run.trigger.type'];
+};
+
 type Slog = {
   blockHeight?: number;
   blockTime?: number;
@@ -178,6 +193,7 @@ type Slog = {
   ksc?: KernelSyscallObject;
   monotime: number;
   name?: string;
+  phase?: string;
   remainingBeans?: bigint;
   replay?: boolean;
   runNum?: number;
@@ -188,6 +204,7 @@ type Slog = {
   syscallNum?: number;
   time: number;
   type: string;
+  usedBeans?: number;
   vatID?: string;
   vsc?: VatSyscallObject;
 };
@@ -264,5 +281,59 @@ declare module '@agoric/telemetry/src/context-aware-slog.js' {
     attributes: T & LogAttributes;
     body: Partial<Slog>;
     time: Slog['time'];
+  };
+  export const SLOG_TYPES: {
+    CLIST: string;
+    CONSOLE: string;
+    COSMIC_SWINGSET: {
+      AFTER_COMMIT_STATS: string;
+      BEGIN_BLOCK: string;
+      BOOTSTRAP_BLOCK: {
+        FINISH: string;
+        START: string;
+      };
+      COMMIT: {
+        FINISH: string;
+        START: string;
+      };
+      END_BLOCK: {
+        FINISH: string;
+        START: string;
+      };
+      KERNEL_UPGRADE_EVENTS: string;
+      RUN: {
+        FINISH: string;
+        START: string;
+      };
+      UPGRADE: {
+        FINISH: string;
+        START: string;
+      };
+    };
+    COSMIC_SWINGSET_TRIGGERS: {
+      BRIDGE_INBOUND: string;
+      DELIVER_INBOUND: string;
+      TIMER_POLL: string;
+      INSTALL_BUNDLE: string;
+    };
+    CRANK: {
+      FINISH: string;
+      START: string;
+    };
+    CREATE_VAT: string;
+    DELIVER: string;
+    DELIVER_RESULT: string;
+    KERNEL: {
+      INIT: {
+        FINISH: string;
+        START: string;
+      };
+    };
+    REPLAY: {
+      FINISH: string;
+      START: string;
+    };
+    SYSCALL: string;
+    SYSCALL_RESULT: string;
   };
 }

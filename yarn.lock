@@ -88,7 +88,7 @@ __metadata:
 
 "@agoric/telemetry@patch:@agoric/telemetry@0.6.3-dev-bf2d699.0#~/.yarn/patches/agoric-telemetry.patch":
   version: 0.6.3-dev-bf2d699.0
-  resolution: "@agoric/telemetry@patch:@agoric/telemetry@npm%3A0.6.3-dev-bf2d699.0#~/.yarn/patches/agoric-telemetry.patch::version=0.6.3-dev-bf2d699.0&hash=a9d3f6"
+  resolution: "@agoric/telemetry@patch:@agoric/telemetry@npm%3A0.6.3-dev-bf2d699.0#~/.yarn/patches/agoric-telemetry.patch::version=0.6.3-dev-bf2d699.0&hash=e989cf"
   dependencies:
     "@agoric/internal": "npm:0.3.3-dev-bf2d699.0+bf2d699"
     "@agoric/store": "npm:0.9.3-dev-bf2d699.0+bf2d699"
@@ -112,7 +112,7 @@ __metadata:
     tmp: "npm:^0.2.1"
   bin:
     frcat: src/frcat-entrypoint.js
-  checksum: 10c0/aac03d900c356bb641ecebd2e25ef3fb89d20fa1d9870d124719b0493e2a0b6b710222feb1bf2778d61e4adc105000ef53aca68d375156447954c9ca0e8a5f22
+  checksum: 10c0/5478b4fd683960e2b59fac84ec6787586ebdac6b721ed031fa20f69a12ad918c9c39c899115f5e8ace8675ce0073574e4341afb1ac8aab63338673a7fd04241d
   languageName: node
   linkType: hard
 

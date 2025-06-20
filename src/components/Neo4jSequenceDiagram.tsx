@@ -4,6 +4,7 @@ import { Context as InteractionContext } from 'context/interactions';
 import {
   checkHealth,
   getInteractions,
+  getRunId,
   getRunIds,
   getVats,
   sanitizeInteractions,
@@ -31,6 +32,7 @@ const Neo4jSequenceDiagram = () => {
     formDisabled: boolean;
     interactionsPerPage: number;
     runId: string;
+    run: null | Run;
     startTime: string;
     status: string;
   }>({
@@ -40,6 +42,7 @@ const Neo4jSequenceDiagram = () => {
     formDisabled: true,
     interactionsPerPage: 20,
     runId: '',
+    run: null,
     startTime: '',
     status: '',
   });
@@ -117,6 +120,10 @@ const Neo4jSequenceDiagram = () => {
       setState((prevState) => ({
         ...prevState,
         runId: runIds.includes(prevState.runId) ? prevState.runId : '',
+        run:
+          !prevState.run || runIds.includes(prevState.run.id!)
+            ? prevState.run
+            : null,
         status: `Diagram generated successfully with ${processedInteractions.length} interactions between ${vats.length} vats.${pagesInfo}`,
       }));
     } catch (error) {
@@ -132,30 +139,6 @@ const Neo4jSequenceDiagram = () => {
       }));
     }
   };
-
-  useEffect(() => {
-    if (!state.connectionHealthy) return;
-
-    setState((prevState) => ({
-      ...prevState,
-      blockHeight: routerBlockHeight,
-      endTime: routerEndTime,
-      interactionsPerPage: getSanitizedInteractionsPerPage(
-        routerInteractionsPerPage,
-      ),
-      runId: routerRunId,
-      startTime: routerStartTime,
-    }));
-
-    fetchData();
-  }, [
-    routerBlockHeight,
-    routerEndTime,
-    routerInteractionsPerPage,
-    routerRunId,
-    routerStartTime,
-    state.connectionHealthy,
-  ]);
 
   useEffect(() => {
     const checkApiHealth = async () => {
@@ -180,6 +163,40 @@ const Neo4jSequenceDiagram = () => {
 
     checkApiHealth();
   }, []);
+
+  useEffect(() => {
+    if (!state.connectionHealthy) return;
+
+    if (routerRunId)
+      getRunId({ runId: routerRunId }).then((run) =>
+        setState((prevState) => ({ ...prevState, run })),
+      );
+    else setState((prevState) => ({ ...prevState, run: null }));
+  }, [routerRunId, state.connectionHealthy]);
+
+  useEffect(() => {
+    if (!state.connectionHealthy) return;
+
+    setState((prevState) => ({
+      ...prevState,
+      blockHeight: routerBlockHeight,
+      endTime: routerEndTime,
+      interactionsPerPage: getSanitizedInteractionsPerPage(
+        routerInteractionsPerPage,
+      ),
+      runId: routerRunId,
+      startTime: routerStartTime,
+    }));
+
+    fetchData();
+  }, [
+    routerBlockHeight,
+    routerEndTime,
+    routerInteractionsPerPage,
+    routerRunId,
+    routerStartTime,
+    state.connectionHealthy,
+  ]);
 
   return (
     <div className="flex flex-col gap-y-3">
@@ -310,6 +327,15 @@ const Neo4jSequenceDiagram = () => {
           }`}
         >
           {state.status}
+        </div>
+      )}
+
+      {state.run && (
+        <div className="bg-white flex flex-col gap-y-2 grow p-2">
+          <p className="font-bold">{`Run '${routerRunId}' details:`}</p>
+          {Object.entries(state.run).map(([key, value], index) => (
+            <p key={index}>{`${key}: ${value}`}</p>
+          ))}
         </div>
       )}
     </div>
