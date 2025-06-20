@@ -168,16 +168,7 @@ export const makeSlogSender = async (options) => {
         'run.trigger.txHash': triggerTxHash,
         'run.trigger.type': runTriggerType,
       },
-      body: {
-        crankNum,
-        kd,
-        ksc,
-        name,
-        phase,
-        type,
-        usedBeans,
-        vatID,
-      },
+      body: { crankNum, kd, ksc, name, phase, type, usedBeans, vatID },
       time,
     } = contextualSlog;
 
@@ -485,3 +476,5 @@ export const makeSlogSender = async (options) => {
     shutdown: () => promiseChain.then(() => driver.close()),
   });
 };
+
+export { SLOG_TYPES };
