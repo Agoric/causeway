@@ -1,6 +1,6 @@
 import { createReadStream } from 'node:fs';
 import { createInterface } from 'node:readline/promises';
-import { makeSlogSender, SLOG_TYPES } from './slogger';
+import { FILE_ENCODING, makeSlogSender, SLOG_TYPES } from './slogger';
 
 const processSlogs = async (
   slogfileName: string,
@@ -8,7 +8,7 @@ const processSlogs = async (
 ) => {
   const readStream = createReadStream(slogfileName, {
     autoClose: true,
-    encoding: 'utf-8',
+    encoding: FILE_ENCODING,
   });
   const reader = createInterface({
     crlfDelay: Infinity,
@@ -19,6 +19,11 @@ const processSlogs = async (
 
   const allowedSlogTypes = [
     SLOG_TYPES.COSMIC_SWINGSET.BEGIN_BLOCK,
+    SLOG_TYPES.COSMIC_SWINGSET.RUN.FINISH,
+    SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.BRIDGE_INBOUND,
+    SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.DELIVER_INBOUND,
+    SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.INSTALL_BUNDLE,
+    SLOG_TYPES.COSMIC_SWINGSET_TRIGGERS.TIMER_POLL,
     SLOG_TYPES.CREATE_VAT,
     SLOG_TYPES.DELIVER,
     SLOG_TYPES.SYSCALL,

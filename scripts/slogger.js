@@ -1,15 +1,124 @@
-import { readFileSync, writeFileSync } from 'fs';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { auth, driver as createDriver, int as neoInt } from 'neo4j-driver';
 import {
   makeContextualSlogProcessor,
   SLOG_TYPES,
 } from '@agoric/telemetry/src/context-aware-slog.js';
 
+/**
+ * @typedef {Object} ConsensusParamBlock
+ * @property {string} max_bytes
+ * @property {string} max_gas
+ *
+ * @typedef {Object} ConsensusParamEvidence
+ * @property {string} max_age_num_blocks
+ * @property {string} max_age_duration
+ * @property {string} max_bytes
+ *
+ * @typedef {Object} ConsensusParamUpdates
+ * @property {ConsensusParamBlock} block
+ * @property {ConsensusParamEvidence} evidence
+ * @property {ConsensusParamValidator} validator
+ *
+ * @typedef {Object} ConsensusParamValidator
+ * @property {string[]} pub_key_types
+ *
+ * @typedef {object} NodeInfo
+ * @property {ProtocolVersion} protocol_version - The protocol versions.
+ * @property {string} id - The node ID.
+ * @property {string} listen_addr - The listen address of the node.
+ * @property {string} network - The network ID.
+ * @property {string} version - The Tendermint version.
+ * @property {string} channels - The channels string.
+ * @property {string} moniker - The node's moniker.
+ * @property {OtherInfo} other - Other miscellaneous information.
+ *
+ * @typedef {object} NodeStatusResponse
+ * @property {RPCError} [error]
+ * @property {number} id
+ * @property {string} jsonrpc
+ * @property {NodeStatusResult} result
+ *
+ * @typedef {object} NodeStatusResult
+ * @property {NodeInfo} node_info - Information about the node.
+ * @property {SyncInfo} sync_info - Information about the node's synchronization status.
+ * @property {ValidatorInfo} validator_info - Information about the validator.
+ *
+ * @typedef {object} OtherInfo
+ * @property {string} tx_index - Transaction index status (e.g., "on").
+ * @property {string} rpc_address - RPC address.
+ *
+ * @typedef {object} ProtocolVersion
+ * @property {string} p2p - P2P protocol version.
+ * @property {string} block - Block protocol version.
+ * @property {string} app - Application protocol version.
+ *
+ * @typedef {object} PubKey
+ * @property {string} type - The type of the public key (e.g., "tendermint/PubKeyEd25519").
+ * @property {string} value - The base64 encoded value of the public key.
+ *
+ * @typedef {object} RPCError
+ * @property {number} code
+ * @property {string} data
+ * @property {string} message
+ *
+ * @typedef {object} SyncInfo
+ * @property {string} latest_block_hash - The hash of the latest block.
+ * @property {string} latest_app_hash - The application hash of the latest block.
+ * @property {string} latest_block_height - The height of the latest block.
+ * @property {string} latest_block_time - The timestamp of the latest block.
+ * @property {string} earliest_block_hash - The hash of the earliest block.
+ * @property {string} earliest_app_hash - The application hash of the earliest block.
+ * @property {string} earliest_block_height - The height of the earliest block.
+ * @property {string} earliest_block_time - The timestamp of the earliest block.
+ * @property {boolean} catching_up - Indicates if the node is catching up to the latest block.
+ *
+ * @typedef {Object} TendermintEvent
+ * @property {string} type
+ * @property {TendermintEventAttribute[]} attributes
+ *
+ * @typedef {Object} TendermintEventAttribute
+ * @property {string} key
+ * @property {string} value
+ * @property {boolean} index
+ *
+ * @typedef {Object} TendermintResponse
+ * @property {RPCError} [error]
+ * @property {number} id
+ * @property {string} jsonrpc
+ * @property {TendermintResult} result
+ *
+ * @typedef {Object} TendermintResult
+ * @property {string} height
+ * @property {null} txs_results
+ * @property {TendermintEvent[]} begin_block_events
+ * @property {TendermintEvent[]} end_block_events
+ * @property {null} validator_updates
+ * @property {ConsensusParamUpdates} consensus_param_updates
+ *
+ * @typedef {object} ValidatorInfo
+ * @property {string} address - The validator's address.
+ * @property {PubKey} pub_key - The validator's public key.
+ * @property {string} voting_power - The validator's voting power.
+ */
+
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const BASE_64_ENCODING = 'base64';
+const CORE_EVAL_RUN_ID_REGEX = /bridge-([0-9]+)-x\/gov-0/;
 const DEFAULT_CONTEXT_FILE = 'slog-context.json';
-const FILE_ENCODING = 'utf8';
+export const FILE_ENCODING = 'utf-8';
+const IS_NUMBER_REGEX = /^[0-9]+(.[0-9]*)?$/;
+const NOT_AVAILABLE_DATA_PLACEHOLDER = 'N/A';
+const PROPOSAL_EVENT_TYPE = 'active_proposal';
+const PROPOSAL_ID_ATTRIBUTE_KEY = 'proposal_id';
+const PROPOSAL_RESULT_ATTRIBUTE_KEY = 'proposal_result';
+const PROPOSAL_PASSED_ATTRIBUTE_VALUE = 'proposal_passed';
+
+const NOT_AVAILABLE_DATA_PLACEHOLDER_ENCODED = Buffer.from(
+  NOT_AVAILABLE_DATA_PLACEHOLDER,
+).toString(BASE_64_ENCODING);
 
 // @ts-ignore
 if (!globalThis.assert)
@@ -17,6 +126,48 @@ if (!globalThis.assert)
   globalThis.assert = (val) => {
     if (!val) throw Error(`value ${val} is not truthy`);
   };
+
+/**
+ * @param {string} nodeUrl
+ * @param {string} blockHeight
+ */
+const getBlockResultEvents = async (blockHeight, nodeUrl) => {
+  const timeout = 15 * 1000;
+
+  const sleep = () => new Promise((resolve) => setTimeout(resolve, timeout));
+
+  while (true) {
+    try {
+      const response = await fetch(
+        `${nodeUrl}/block_results?height=${blockHeight}`,
+        {
+          headers: {
+            Accept: 'application/json',
+          },
+          method: 'GET',
+          signal: AbortSignal.timeout(timeout),
+        },
+      );
+
+      if (!response.ok)
+        throw Error(
+          `HTTP Error! status: ${response.status}, reason: ${await response.text()}`,
+        );
+
+      const data = /** @type {TendermintResponse} */ (await response.json());
+
+      if (data.error)
+        throw Error(
+          `RPC Error! status: ${data.error.code}, reason: ${data.error.data}`,
+        );
+
+      return data.result;
+    } catch (err) {
+      console.error(err);
+      await sleep();
+    }
+  }
+};
 
 /**
  * @param {string} filePath
@@ -51,30 +202,44 @@ const getContextFilePersistenceUtils = (filePath) => {
 };
 
 /**
- * @param {any} slogObj
+ * @param {string} nodeUrl
+ * @param {string} blockHeight
  */
-const serializeSlogObj = (slogObj) =>
-  JSON.stringify(slogObj, (_, value) =>
-    typeof value === BigInt.name.toLowerCase() ? Number(value) : value,
-  );
+const getProposalIdFromCoreEvalRun = async (blockHeight, nodeUrl) => {
+  const blockResultEvents = await getBlockResultEvents(blockHeight, nodeUrl);
 
-/**
- * @param {ReturnType<ReturnType<typeof createDriver>['session']>} session
- */
-const setupIndexes = async (session) => {
-  const indexes = [
-    'CREATE INDEX message_result IF NOT EXISTS FOR (message:Message) ON (message.result)',
-    'CREATE INDEX message_runId IF NOT EXISTS FOR (message:Message) ON (message.runID)',
-    'CREATE INDEX notify_kpid IF NOT EXISTS FOR (notify:Notify) ON (notify.kpid)',
-    'CREATE INDEX notify_runId IF NOT EXISTS FOR (notify:Notify) ON (notify.runID)',
-    'CREATE INDEX resolve_result IF NOT EXISTS FOR (resolve:Resolve) ON (resolve.result)',
-    'CREATE INDEX run_block_height IF NOT EXISTS FOR (run:Run) ON (run.blockHeight)',
-    'CREATE INDEX run_id IF NOT EXISTS FOR (run:Run) ON (run.id)',
-    'CREATE INDEX syscall_result IF NOT EXISTS FOR (syscall:Syscall) ON (syscall.result)',
-  ];
+  let proposalIdEncoded = NOT_AVAILABLE_DATA_PLACEHOLDER_ENCODED;
 
-  for (const index of indexes) await session.run(index);
-  await session.close();
+  for (const event of blockResultEvents.end_block_events) {
+    if (event.type !== PROPOSAL_EVENT_TYPE) continue;
+
+    let proposalPassed = false;
+
+    for (const attribute of event.attributes)
+      if (
+        matchEncodedOrDecodedValue(
+          PROPOSAL_RESULT_ATTRIBUTE_KEY,
+          attribute.key,
+        ) &&
+        matchEncodedOrDecodedValue(
+          PROPOSAL_PASSED_ATTRIBUTE_VALUE,
+          attribute.value,
+        )
+      )
+        proposalPassed = true;
+
+    if (proposalPassed)
+      proposalIdEncoded =
+        event.attributes.find(({ key }) =>
+          matchEncodedOrDecodedValue(PROPOSAL_ID_ATTRIBUTE_KEY, key),
+        )?.value || proposalIdEncoded;
+
+    if (proposalIdEncoded) break;
+  }
+
+  return proposalIdEncoded.match(IS_NUMBER_REGEX)
+    ? proposalIdEncoded
+    : Buffer.from(proposalIdEncoded, BASE_64_ENCODING).toString();
 };
 
 /**
@@ -84,6 +249,8 @@ export const makeSlogSender = async (options) => {
   const NEO4J_PASSWORD = options.env.NEO4J_PASSWORD || 'secretpassword';
   const NEO4J_URI = options.env.NEO4J_URI || 'neo4j://localhost:7687';
   const NEO4J_USER = options.env.NEO4J_USER || 'neo4j';
+  const NODE_HOST = options.env.RPCNODES_SERVICE_HOST;
+  const NODE_PORT = options.env.RPCNODES_SERVICE_PORT_RPC;
 
   const driver = createDriver(NEO4J_URI);
   const persistenceUtils = getContextFilePersistenceUtils(
@@ -172,7 +339,7 @@ export const makeSlogSender = async (options) => {
       time,
     } = contextualSlog;
 
-    const runId = _runId || 'N/A';
+    const runId = _runId || NOT_AVAILABLE_DATA_PLACEHOLDER;
 
     switch (slog.type) {
       case SLOG_TYPES.COSMIC_SWINGSET.BEGIN_BLOCK: {
@@ -213,36 +380,65 @@ export const makeSlogSender = async (options) => {
           triggerType = phase;
 
         addPromisesToChain(async () => {
+          let proposalId = NOT_AVAILABLE_DATA_PLACEHOLDER;
+
+          if (NODE_HOST && NODE_PORT) {
+            const matches = currentRunId.match(CORE_EVAL_RUN_ID_REGEX);
+            if (matches)
+              proposalId = await getProposalIdFromCoreEvalRun(
+                matches[1],
+                `http://${NODE_HOST}:${NODE_PORT}`,
+              );
+          }
+
           await session.run(
-            `CREATE (
+            `MERGE (
                 run:Run {
-                  blockHeight:        $blockHeight,
-                  blockTime:          $blockTime,
-                  computrons:         $computrons,
-                  id:                 $id,
-                  number:             $number,
-                  time:               $time,
-                  triggerBundleHash:  $triggerBundleHash,
-                  triggerMsgIdx:      $triggerMsgIdx,
-                  triggerSender:      $triggerSender,
-                  triggerSource:      $triggerSource,
-                  triggerTxHash:      $triggerTxHash,
-                  triggerType:        $triggerType
+                  id: $id
                 }
               )
+              ON CREATE SET
+                run.blockHeight       = $blockHeight,
+                run.blockTime         = $blockTime,
+                run.computrons        = $computrons,
+                run.number            = $number,
+                run.proposalID        = $proposalId,
+                run.time              = $time,
+                run.triggerBundleHash = $triggerBundleHash,
+                run.triggerMsgIdx     = $triggerMsgIdx,
+                run.triggerSender     = $triggerSender,
+                run.triggerSource     = $triggerSource,
+                run.triggerTxHash     = $triggerTxHash,
+                run.triggerType       = $triggerType
+              ON MATCH SET
+                run.blockHeight       = $blockHeight,
+                run.blockTime         = $blockTime,
+                run.computrons        = $computrons,
+                run.number            = $number,
+                run.proposalID        = $proposalId,
+                run.time              = $time,
+                run.triggerBundleHash = $triggerBundleHash,
+                run.triggerMsgIdx     = $triggerMsgIdx,
+                run.triggerSender     = $triggerSender,
+                run.triggerSource     = $triggerSource,
+                run.triggerTxHash     = $triggerTxHash,
+                run.triggerType       = $triggerType
+              RETURN run;
             `,
             prepareParams({
               blockHeight,
               blockTime,
               computrons: usedBeans || 0,
               id: currentRunId,
-              number: runNumber || 'N/A',
+              number: runNumber || NOT_AVAILABLE_DATA_PLACEHOLDER,
+              proposalId,
               time,
-              triggerBundleHash: triggerBundleHash || 'N/A',
+              triggerBundleHash:
+                triggerBundleHash || NOT_AVAILABLE_DATA_PLACEHOLDER,
               triggerMsgIdx: triggerMsgIdx || 0,
-              triggerSender: triggerSender || 'N/A',
-              triggerSource: triggerSource || 'N/A',
-              triggerTxHash: triggerTxHash || 'N/A',
+              triggerSender: triggerSender || NOT_AVAILABLE_DATA_PLACEHOLDER,
+              triggerSource: triggerSource || NOT_AVAILABLE_DATA_PLACEHOLDER,
+              triggerTxHash: triggerTxHash || NOT_AVAILABLE_DATA_PLACEHOLDER,
               triggerType,
             }),
           );
@@ -475,6 +671,41 @@ export const makeSlogSender = async (options) => {
     forceFlush: () => promiseChain,
     shutdown: () => promiseChain.then(() => driver.close()),
   });
+};
+
+/**
+ * @param {string} decodedValue
+ * @param {string} value
+ */
+const matchEncodedOrDecodedValue = (decodedValue, value) =>
+  decodedValue === value ||
+  Buffer.from(decodedValue).toString(BASE_64_ENCODING) === value;
+
+/**
+ * @param {any} slogObj
+ */
+const serializeSlogObj = (slogObj) =>
+  JSON.stringify(slogObj, (_, value) =>
+    typeof value === BigInt.name.toLowerCase() ? Number(value) : value,
+  );
+
+/**
+ * @param {ReturnType<ReturnType<typeof createDriver>['session']>} session
+ */
+const setupIndexes = async (session) => {
+  const indexes = [
+    'CREATE INDEX message_result IF NOT EXISTS FOR (message:Message) ON (message.result)',
+    'CREATE INDEX message_runId IF NOT EXISTS FOR (message:Message) ON (message.runID)',
+    'CREATE INDEX notify_kpid IF NOT EXISTS FOR (notify:Notify) ON (notify.kpid)',
+    'CREATE INDEX notify_runId IF NOT EXISTS FOR (notify:Notify) ON (notify.runID)',
+    'CREATE INDEX resolve_result IF NOT EXISTS FOR (resolve:Resolve) ON (resolve.result)',
+    'CREATE INDEX run_block_height IF NOT EXISTS FOR (run:Run) ON (run.blockHeight)',
+    'CREATE INDEX run_id IF NOT EXISTS FOR (run:Run) ON (run.id)',
+    'CREATE INDEX syscall_result IF NOT EXISTS FOR (syscall:Syscall) ON (syscall.result)',
+  ];
+
+  for (const index of indexes) await session.run(index);
+  await session.close();
 };
 
 export { SLOG_TYPES };
